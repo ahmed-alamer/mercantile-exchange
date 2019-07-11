@@ -1,4 +1,4 @@
-package com.hydra.merc.transaction;
+package com.hydra.merc.ledger;
 
 import com.google.common.collect.Lists;
 import com.hydra.merc.account.Account;
@@ -33,13 +33,13 @@ public class Ledger {
 
 
     @Transactional
-    public List<Transaction> debitMargin(Position position, float initialMargin) {
-        var buyerTransaction = new Transaction()
+    public List<LedgerTransaction> debitMargin(Position position, float initialMargin) {
+        var buyerTransaction = new LedgerTransaction()
                 .setAmount(initialMargin)
                 .setCredit(Account.MARGINS_ACCOUNT)
                 .setDebit(position.getBuyer());
 
-        var sellerTransaction = new Transaction()
+        var sellerTransaction = new LedgerTransaction()
                 .setAmount(initialMargin)
                 .setCredit(Account.MARGINS_ACCOUNT)
                 .setDebit(position.getSeller());
@@ -49,7 +49,7 @@ public class Ledger {
     }
 
 
-    public List<Transaction> debitFees(Position position, float fee) {
+    public List<LedgerTransaction> debitFees(Position position, float fee) {
         var underlying = position.getContract().getUnderlying();
         var price = position.getPrice();
 
@@ -57,12 +57,12 @@ public class Ledger {
 
         var feeAmount = notional * fee;
 
-        var buyerFee = new Transaction()
+        var buyerFee = new LedgerTransaction()
                 .setAmount(feeAmount)
                 .setCredit(Account.FEES_ACCOUNT)
                 .setDebit(position.getBuyer());
 
-        var sellerFee = new Transaction()
+        var sellerFee = new LedgerTransaction()
                 .setAmount(feeAmount)
                 .setCredit(Account.FEES_ACCOUNT)
                 .setDebit(position.getSeller());
@@ -71,11 +71,19 @@ public class Ledger {
         return Lists.newArrayList(Arrays.asList(buyerFee, sellerFee));
     }
 
-    private float totalTransactionsNotional(Account account, Function<Account, List<Transaction>> transactionsSupplier) {
-        return transactionsSupplier.apply(account)
-                .stream()
-                .map(Transaction::getAmount)
+    private float totalTransactionsNotional(Account account, Function<Account, List<LedgerTransaction>> transactionsSupplier) {
+        return transactionsTotal(transactionsSupplier.apply(account));
+    }
+
+    private float transactionsTotal(List<LedgerTransaction> transactions) {
+        return transactions.stream()
+                .map(LedgerTransaction::getAmount)
                 .reduce(Float::sum)
                 .orElse(0f);
+
+    }
+
+    public LedgerTransaction submitTransaction(LedgerTransaction transaction) {
+        return transactionsRepo.save(transaction);
     }
 }

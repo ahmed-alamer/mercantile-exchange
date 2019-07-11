@@ -37,4 +37,6 @@ public class Position {
     @Enumerated(EnumType.STRING)
     private PositionType type;
 
+    private boolean open = true;
+
 }

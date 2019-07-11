@@ -4,10 +4,10 @@ import com.google.common.collect.Lists;
 import com.hydra.merc.account.Account;
 import com.hydra.merc.contract.Contract;
 import com.hydra.merc.fee.FeesService;
+import com.hydra.merc.ledger.Ledger;
+import com.hydra.merc.ledger.LedgerTransaction;
 import com.hydra.merc.margin.MarginRequirement;
 import com.hydra.merc.margin.MarginRequirementsRepo;
-import com.hydra.merc.transaction.Ledger;
-import com.hydra.merc.transaction.Transaction;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import org.joda.time.DateTime;
@@ -43,7 +43,7 @@ public class PositionsService {
         var buyerBalance = ledger.getAccountBalance(buyer);
         var sellerBalance = ledger.getAccountBalance(seller);
 
-        var marginRequirement = marginRequirementsRepo.findByContractAndStartBeforeAndEndAfterOrderByStartDesc(
+        var marginRequirement = marginRequirementsRepo.findByContractAndStartAfterAndEndBeforeOrderByStartDesc(
                 contract,
                 DateTime.now(),
                 DateTime.now()
@@ -90,7 +90,8 @@ public class PositionsService {
 
     public enum TicketType {
         FILL,
-        INSUFFICIENT_FUNDS
+        INSUFFICIENT_FUNDS,
+        CONTRACT_EXPIRATION
     }
 
     @Data
@@ -99,13 +100,13 @@ public class PositionsService {
         private TicketType type;
         private Position position;
 
-        private List<Transaction> transactions = Lists.newArrayList();
+        private List<LedgerTransaction> transactions = Lists.newArrayList();
 
         private List<Account> failedAccounts;
 
         private DateTime timestamp = DateTime.now();
 
-        public Ticket addTransactions(List<Transaction> transactions) {
+        public Ticket addTransactions(List<LedgerTransaction> transactions) {
             this.transactions.addAll(transactions);
             return this;
         }

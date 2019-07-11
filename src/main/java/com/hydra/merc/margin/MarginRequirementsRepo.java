@@ -12,5 +12,5 @@ import java.util.Optional;
  */
 @Repository
 public interface MarginRequirementsRepo extends CrudRepository<MarginRequirement, Long> {
-    Optional<MarginRequirement> findByContractAndStartBeforeAndEndAfterOrderByStartDesc(Contract contract, DateTime start, DateTime end);
+    Optional<MarginRequirement> findByContractAndStartAfterAndEndBeforeOrderByStartDesc(Contract contract, DateTime start, DateTime end);
 }

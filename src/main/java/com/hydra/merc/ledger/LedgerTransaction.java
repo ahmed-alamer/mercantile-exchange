@@ -1,4 +1,4 @@
-package com.hydra.merc.transaction;
+package com.hydra.merc.ledger;
 
 import com.hydra.merc.account.Account;
 import lombok.Data;
@@ -14,7 +14,7 @@ import java.util.UUID;
 @Data
 @Entity
 @Accessors(chain = true)
-public class Transaction {
+public class LedgerTransaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

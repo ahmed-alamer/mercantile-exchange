@@ -2,11 +2,12 @@ package com.hydra.merc.contract;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
+import org.joda.time.LocalDate;
 import org.joda.time.Period;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import java.time.LocalDate;
+
 
 /**
  * Created By aalamer on 07-10-2019
