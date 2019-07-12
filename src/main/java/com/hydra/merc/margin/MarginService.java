@@ -1,5 +1,6 @@
 package com.hydra.merc.margin;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.hydra.merc.account.Account;
 import com.hydra.merc.contract.Contract;
@@ -8,6 +9,7 @@ import com.hydra.merc.ledger.LedgerTransaction;
 import com.hydra.merc.position.Position;
 import com.hydra.merc.price.DailyPriceRepo;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +48,6 @@ public class MarginService {
 
         var margins = marginsRepo.findAllByPosition(position);
 
-        // TODO: Method!
         var buyerMargin = getMargin(margins, position.getBuyer());
         var sellerMargin = getMargin(margins, position.getSeller());
 
@@ -89,12 +90,20 @@ public class MarginService {
                     .map(MarginRequirement::getInitialMargin)
                     .orElse(contract.getInitialMargin());
 
-            var marginCallTransaction = new LedgerTransaction()
-                    .setAmount(remainingCollateral + requiredCollateral)
+            float marginCallAmount = remainingCollateral + requiredCollateral;
+
+            var marginCallLedgerTransaction = new LedgerTransaction()
+                    .setAmount(marginCallAmount)
                     .setDebit(counterparts.longCounterpart.getAccount())
                     .setCredit(Account.MARGINS_ACCOUNT);
 
-            ledgerTransactions.add(ledger.submitTransaction(marginCallTransaction));
+            var marginCall = new MarginTransaction()
+                    .setDebit(marginCallAmount)
+                    .setMargin(counterparts.longCounterpart)
+                    .setType(MarginTransactionType.MARGIN_CALL);
+
+            marginTransactions.add(marginCall);
+            ledgerTransactions.add(ledger.submitTransaction(marginCallLedgerTransaction));
         } else {
             marginTransactions.add(debitMargin(counterparts.shortCounterpart, delta));
         }
@@ -118,6 +127,73 @@ public class MarginService {
                 .setType(MarginTransactionType.SETTLEMENT);
 
         return marginTransactionsRepo.save(transaction);
+    }
+
+    public List<MarginTransaction> openMargins(Position position, Float initialMargin) {
+        Account buyer = position.getBuyer();
+        Account seller = position.getSeller();
+
+        return Lists.newArrayList(openMargin(position, buyer, initialMargin), openMargin(position, seller, initialMargin));
+    }
+
+    public List<MarginCloseResult> closeMargins(Position position) {
+        var margins = marginsRepo.findAllByPosition(position);
+
+        return ImmutableList.<MarginCloseResult>builder()
+                .add(closeMargin(position.getBuyer(), getMargin(margins, position.getBuyer())))
+                .add(closeMargin(position.getSeller(), getMargin(margins, position.getSeller())))
+                .build();
+    }
+
+    public MarginCloseResult closeMargin(Account account, Margin margin) {
+        float balance = getBalance(margin);
+        var transaction = new MarginTransaction()
+                .setMargin(margin)
+                .setType(MarginTransactionType.CLOSE);
+
+        if (balance > 0) {
+            transaction.setCredit(balance);
+        } else {
+            transaction.setDebit(balance);
+        }
+
+        var creditAccount = balance > 0
+                ? account
+                : Account.MARGINS_ACCOUNT;
+
+        var debitAccount = balance > 0
+                ? Account.MARGINS_ACCOUNT
+                : account;
+
+        LedgerTransaction ledgerTransaction = new LedgerTransaction()
+                .setCredit(creditAccount)
+                .setDebit(debitAccount)
+                .setAmount(balance);
+
+        return MarginCloseResult.of(transaction, ledgerTransaction);
+    }
+
+    private MarginTransaction openMargin(Position position, Account account, Float initialMargin) {
+        var margin = new Margin()
+                .setAccount(account)
+                .setPosition(position)
+                .setCollateral(initialMargin);
+
+        marginsRepo.save(margin);
+
+        var initialMarginTransaction = new MarginTransaction()
+                .setType(MarginTransactionType.OPEN)
+                .setCredit(initialMargin)
+                .setMargin(margin);
+
+        return marginTransactionsRepo.save(initialMarginTransaction);
+    }
+
+    @Data
+    @AllArgsConstructor(staticName = "of")
+    public static final class MarginCloseResult {
+        private final MarginTransaction marginTransaction;
+        private final LedgerTransaction ledgerTransaction;
     }
 
     @AllArgsConstructor(staticName = "of")

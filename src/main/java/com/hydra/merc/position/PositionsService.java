@@ -1,21 +1,18 @@
 package com.hydra.merc.position;
 
-import com.google.common.collect.Lists;
 import com.hydra.merc.account.Account;
-import com.hydra.merc.contract.Contract;
 import com.hydra.merc.fee.FeesService;
 import com.hydra.merc.ledger.Ledger;
-import com.hydra.merc.ledger.LedgerTransaction;
 import com.hydra.merc.margin.MarginRequirement;
 import com.hydra.merc.margin.MarginRequirementsRepo;
-import lombok.Data;
-import lombok.experimental.Accessors;
+import com.hydra.merc.margin.MarginService;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created By aalamer on 07-10-2019
@@ -28,18 +25,27 @@ public class PositionsService {
     private final PositionsRepo positionsRepo;
     private final MarginRequirementsRepo marginRequirementsRepo;
 
+    private final MarginService marginService;
+
     @Autowired
     public PositionsService(Ledger ledger,
                             FeesService feesService,
                             PositionsRepo positionsRepo,
-                            MarginRequirementsRepo marginRequirementsRepo) {
+                            MarginRequirementsRepo marginRequirementsRepo,
+                            MarginService marginService) {
         this.positionsRepo = positionsRepo;
         this.ledger = ledger;
         this.feesService = feesService;
         this.marginRequirementsRepo = marginRequirementsRepo;
+        this.marginService = marginService;
     }
 
-    public Ticket openPosition(Contract contract, Account buyer, Account seller, int quantity) {
+    @Transactional
+    public Ticket openPosition(Position position) {
+        var contract = position.getContract();
+        var buyer = position.getBuyer();
+        var seller = position.getSeller();
+
         var buyerBalance = ledger.getAccountBalance(buyer);
         var sellerBalance = ledger.getAccountBalance(seller);
 
@@ -49,8 +55,7 @@ public class PositionsService {
                 DateTime.now()
         );
 
-        var initialMargin = marginRequirement.map(MarginRequirement::getInitialMargin)
-                .orElse(contract.getInitialMargin());
+        var initialMargin = marginRequirement.map(MarginRequirement::getInitialMargin).orElse(contract.getInitialMargin());
 
         var failedAccounts = new ArrayList<Account>();
         if (buyerBalance < initialMargin) {
@@ -67,11 +72,6 @@ public class PositionsService {
                     .setFailedAccounts(failedAccounts);
         }
 
-        var position = new Position()
-                .setBuyer(buyer)
-                .setSeller(seller)
-                .setQuantity(quantity)
-                .setType(PositionType.OPEN);
 
         var debits = ledger.debitMargin(position, initialMargin);
 
@@ -79,13 +79,28 @@ public class PositionsService {
 
         var fees = ledger.debitFees(position, fee);
 
+
         positionsRepo.save(position);
+
+        var marginTransactions = marginService.openMargins(position, initialMargin);
 
         return new Ticket()
                 .setType(TicketType.FILL)
                 .setPosition(position)
                 .addTransactions(debits)
-                .addTransactions(fees);
+                .addTransactions(fees)
+                .addMarinTransactions(marginTransactions);
+    }
+
+    // Winding down a position at expiration
+    public Ticket closePosition(Position position) {
+        var closeResult = marginService.closeMargins(position);
+
+        return new Ticket()
+                .setType(TicketType.CONTRACT_EXPIRATION)
+                .setPosition(position)
+                .addTransactions(closeResult.stream().map(MarginService.MarginCloseResult::getLedgerTransaction).collect(Collectors.toList()))
+                .addMarinTransactions(closeResult.stream().map(MarginService.MarginCloseResult::getMarginTransaction).collect(Collectors.toList()));
     }
 
     public enum TicketType {
@@ -94,21 +109,4 @@ public class PositionsService {
         CONTRACT_EXPIRATION
     }
 
-    @Data
-    @Accessors(chain = true)
-    public final static class Ticket {
-        private TicketType type;
-        private Position position;
-
-        private List<LedgerTransaction> transactions = Lists.newArrayList();
-
-        private List<Account> failedAccounts;
-
-        private DateTime timestamp = DateTime.now();
-
-        public Ticket addTransactions(List<LedgerTransaction> transactions) {
-            this.transactions.addAll(transactions);
-            return this;
-        }
-    }
 }

@@ -3,6 +3,7 @@ package com.hydra.merc.margin;
 import com.hydra.merc.account.Account;
 import com.hydra.merc.position.Position;
 import lombok.Data;
+import lombok.experimental.Accessors;
 import org.joda.time.DateTime;
 
 import javax.persistence.*;
@@ -12,6 +13,7 @@ import javax.persistence.*;
  */
 @Data
 @Entity
+@Accessors(chain = true)
 public class Margin {
 
     @Id
