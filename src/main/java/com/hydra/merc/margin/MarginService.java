@@ -51,7 +51,7 @@ public class MarginService {
 
         var delta = settlementPrice - openPrice;
 
-        Counterparts counterparts = buildCounterparts(position, delta);
+        var counterparts = buildCounterparts(position, delta);
 
         return settle(contract, counterparts, delta);
     }
@@ -93,15 +93,15 @@ public class MarginService {
 
         marginTransactions.add(creditMargin(counterparts.longCounterpart, delta));
 
-        float collateral = getBalance(counterparts.shortCounterpart);
+        var collateral = getBalance(counterparts.shortCounterpart);
 
         var remainingCollateral = collateral - delta;
         if (remainingCollateral <= 0) {
             var requiredCollateral = marginRequirementsRepo.findByContractAndStartAfterAndEndBeforeOrderByStartDesc(contract, DateTime.now(), contract.getExpirationDate().toDateTimeAtStartOfDay())
                     .map(MarginRequirement::getInitialMargin)
-                    .orElse(contract.getInitialMargin());
+                    .orElse(contract.getSpecifications().getInitialMargin());
 
-            float marginCallAmount = remainingCollateral + requiredCollateral;
+            var marginCallAmount = remainingCollateral + requiredCollateral;
 
             var marginCallLedgerTransaction = new LedgerTransaction()
                     .setAmount(marginCallAmount)
@@ -141,8 +141,8 @@ public class MarginService {
     }
 
     public List<MarginTransaction> openMargins(Position position, Float initialMargin) {
-        Account buyer = position.getBuyer();
-        Account seller = position.getSeller();
+        var buyer = position.getBuyer();
+        var seller = position.getSeller();
 
         return Lists.newArrayList(openMargin(position, buyer, initialMargin), openMargin(position, seller, initialMargin));
     }
@@ -157,7 +157,7 @@ public class MarginService {
     }
 
     public MarginCloseResult closeMargin(Account account, Margin margin) {
-        float balance = getBalance(margin);
+        var balance = getBalance(margin);
         var transaction = new MarginTransaction()
                 .setMargin(margin)
                 .setType(MarginTransactionType.CLOSE);
@@ -176,7 +176,7 @@ public class MarginService {
                 ? Account.MARGINS_ACCOUNT
                 : account;
 
-        LedgerTransaction ledgerTransaction = new LedgerTransaction()
+        var ledgerTransaction = new LedgerTransaction()
                 .setCredit(creditAccount)
                 .setDebit(debitAccount)
                 .setAmount(balance);

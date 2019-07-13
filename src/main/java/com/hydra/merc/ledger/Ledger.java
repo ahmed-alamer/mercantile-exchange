@@ -50,7 +50,7 @@ public class Ledger {
 
 
     public List<LedgerTransaction> debitFees(Position position, float fee) {
-        var underlying = position.getContract().getUnderlying();
+        var underlying = position.getContract().getSpecifications().getUnderlying();
         var price = position.getPrice();
 
         var notional = price * underlying;

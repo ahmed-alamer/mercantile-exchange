@@ -55,7 +55,8 @@ public class PositionsService {
                 DateTime.now()
         );
 
-        var initialMargin = marginRequirement.map(MarginRequirement::getInitialMargin).orElse(contract.getInitialMargin());
+        var initialMargin = marginRequirement.map(MarginRequirement::getInitialMargin)
+                .orElse(contract.getSpecifications().getInitialMargin());
 
         var failedAccounts = new ArrayList<Account>();
         if (buyerBalance < initialMargin) {

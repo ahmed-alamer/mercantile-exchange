@@ -3,10 +3,8 @@ package com.hydra.merc.contract;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import org.joda.time.LocalDate;
-import org.joda.time.Period;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import javax.persistence.*;
 
 
 /**
@@ -17,23 +15,16 @@ import javax.persistence.Id;
 @Accessors(chain = true)
 public class Contract {
 
-    public static final Period DEFAULT_SETTLEMENT_PERIOD = Period.days(1);
-
     @Id
-    private String symbol;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private long id;
 
-    private String name;
+    @ManyToOne
+    private ContractSpecifications specifications;
 
     private LocalDate expirationDate;
     private LocalDate issueDate;
 
-    private int underlying;
-
-    private float initialMargin;
-
     private float fee;
 
-    private float tickSize;
-
-    private Period settlementPeriod = DEFAULT_SETTLEMENT_PERIOD;
 }
