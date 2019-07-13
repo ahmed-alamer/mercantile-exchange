@@ -7,11 +7,11 @@ import com.hydra.merc.contract.Contract;
 import com.hydra.merc.ledger.Ledger;
 import com.hydra.merc.ledger.LedgerTransaction;
 import com.hydra.merc.position.Position;
-import com.hydra.merc.price.DailyPriceRepo;
+import com.hydra.merc.price.DailyPriceService;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import org.joda.time.DateTime;
-import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,20 +24,20 @@ import java.util.List;
 public class MarginService {
 
     private final MarginsRepo marginsRepo;
-    private final DailyPriceRepo dailyPriceRepo;
     private final MarginRequirementsRepo marginRequirementsRepo;
     private final MarginTransactionsRepo marginTransactionsRepo;
 
     private final Ledger ledger;
+    private final DailyPriceService dailyPriceService;
 
     @Autowired
     public MarginService(MarginsRepo marginsRepo,
-                         DailyPriceRepo dailyPriceRepo,
+                         DailyPriceService dailyPriceService,
                          MarginRequirementsRepo marginRequirementsRepo,
                          MarginTransactionsRepo marginTransactionsRepo,
                          Ledger ledger) {
         this.marginsRepo = marginsRepo;
-        this.dailyPriceRepo = dailyPriceRepo;
+        this.dailyPriceService = dailyPriceService;
         this.marginRequirementsRepo = marginRequirementsRepo;
         this.marginTransactionsRepo = marginTransactionsRepo;
         this.ledger = ledger;
@@ -46,22 +46,33 @@ public class MarginService {
     public DailySettlement runDailySettlement(Position position) {
         var contract = position.getContract();
 
+        var openPrice = position.getPrice();
+        var settlementPrice = dailyPriceService.getPrice(contract).orElseThrow().getPrice();
+
+        var delta = settlementPrice - openPrice;
+
+        Counterparts counterparts = buildCounterparts(position, delta);
+
+        return settle(contract, counterparts, delta);
+    }
+
+    private Counterparts buildCounterparts(Position position, float delta) {
         var margins = marginsRepo.findAllByPosition(position);
 
         var buyerMargin = getMargin(margins, position.getBuyer());
         var sellerMargin = getMargin(margins, position.getSeller());
 
-        var openPrice = position.getPrice();
-        var settlementPrice = dailyPriceRepo.findContractAndDay(contract, LocalDate.now()).orElseThrow().getPrice();
+        if (delta > 0) {
+            return Counterparts.builder()
+                    .longCounterpart(buyerMargin)
+                    .shortCounterpart(sellerMargin)
+                    .build();
+        }
 
-        var delta = settlementPrice - openPrice;
-
-
-        var counterparts = delta > 0
-                ? Counterparts.of(buyerMargin, sellerMargin)
-                : Counterparts.of(sellerMargin, buyerMargin);
-
-        return settle(contract, counterparts, delta);
+        return Counterparts.builder()
+                .longCounterpart(sellerMargin)
+                .shortCounterpart(buyerMargin)
+                .build();
     }
 
     private Margin getMargin(List<Margin> margins, Account buyer) {
@@ -196,6 +207,7 @@ public class MarginService {
         private final LedgerTransaction ledgerTransaction;
     }
 
+    @Builder
     @AllArgsConstructor(staticName = "of")
     private static final class Counterparts {
         private final Margin longCounterpart;
