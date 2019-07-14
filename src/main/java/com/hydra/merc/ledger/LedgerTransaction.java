@@ -6,7 +6,6 @@ import lombok.experimental.Accessors;
 import org.joda.time.DateTime;
 
 import javax.persistence.*;
-import java.util.UUID;
 
 /**
  * Created By aalamer on 07-10-2019
@@ -18,7 +17,7 @@ public class LedgerTransaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String id = UUID.randomUUID().toString();
+    private long id;
 
     @ManyToOne
     private Account credit;

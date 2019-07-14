@@ -17,16 +17,16 @@ import java.util.function.Function;
 @Service
 public class Ledger {
 
-    private final TransactionsRepo transactionsRepo;
+    private final LedgerTransactionsRepo ledgerTransactionsRepo;
 
     @Autowired
-    public Ledger(TransactionsRepo transactionsRepo) {
-        this.transactionsRepo = transactionsRepo;
+    public Ledger(LedgerTransactionsRepo ledgerTransactionsRepo) {
+        this.ledgerTransactionsRepo = ledgerTransactionsRepo;
     }
 
     public float getAccountBalance(Account account) {
-        Float totalCredit = totalTransactionsNotional(account, transactionsRepo::findAllByCredit);
-        Float totalDebit = totalTransactionsNotional(account, transactionsRepo::findAllByDebit);
+        Float totalCredit = totalTransactionsNotional(account, ledgerTransactionsRepo::findAllByCredit);
+        Float totalDebit = totalTransactionsNotional(account, ledgerTransactionsRepo::findAllByDebit);
 
         return totalCredit - totalDebit;
     }
@@ -45,7 +45,7 @@ public class Ledger {
                 .setDebit(position.getSeller());
 
 
-        return Lists.newArrayList(transactionsRepo.saveAll(Arrays.asList(buyerTransaction, sellerTransaction)));
+        return Lists.newArrayList(ledgerTransactionsRepo.saveAll(Arrays.asList(buyerTransaction, sellerTransaction)));
     }
 
 
@@ -84,6 +84,6 @@ public class Ledger {
     }
 
     public LedgerTransaction submitTransaction(LedgerTransaction transaction) {
-        return transactionsRepo.save(transaction);
+        return ledgerTransactionsRepo.save(transaction);
     }
 }
