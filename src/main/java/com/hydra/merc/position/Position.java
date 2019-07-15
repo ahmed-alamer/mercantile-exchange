@@ -32,7 +32,7 @@ public class Position {
     private float price;
     private int quantity;
 
-    private DateTime openTime;
+    private DateTime openTime = DateTime.now();
 
     @Enumerated(EnumType.STRING)
     private PositionType type;
