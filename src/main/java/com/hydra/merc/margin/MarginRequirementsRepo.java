@@ -1,8 +1,10 @@
 package com.hydra.merc.margin;
 
 import com.hydra.merc.contract.Contract;
-import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -12,5 +14,6 @@ import java.util.Optional;
  */
 @Repository
 public interface MarginRequirementsRepo extends CrudRepository<MarginRequirement, Long> {
-    Optional<MarginRequirement> findByContractAndStartAfterAndEndBeforeOrderByStartDesc(Contract contract, DateTime start, DateTime end);
+    @Query("from MarginRequirement m where contract = :contract and (endDate < :endDate and startDate > :startDate) order by startDate desc")
+    Optional<MarginRequirement> findByContractAndPeriod(@Param("contract") Contract contract, @Param("startDate") LocalDate start, @Param("endDate") LocalDate end);
 }

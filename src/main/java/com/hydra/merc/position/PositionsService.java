@@ -6,7 +6,7 @@ import com.hydra.merc.ledger.Ledger;
 import com.hydra.merc.margin.MarginRequirement;
 import com.hydra.merc.margin.MarginRequirementsRepo;
 import com.hydra.merc.margin.MarginService;
-import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,10 +49,10 @@ public class PositionsService {
         var buyerBalance = ledger.getAccountBalance(buyer);
         var sellerBalance = ledger.getAccountBalance(seller);
 
-        var marginRequirement = marginRequirementsRepo.findByContractAndStartAfterAndEndBeforeOrderByStartDesc(
+        var marginRequirement = marginRequirementsRepo.findByContractAndPeriod(
                 contract,
-                DateTime.now(),
-                DateTime.now()
+                LocalDate.now(),
+                LocalDate.now().plusDays(10)
         );
 
         var contractInitialMargin = marginRequirement.map(MarginRequirement::getInitialMargin)

@@ -11,7 +11,7 @@ import com.hydra.merc.price.DailyPriceService;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -99,7 +99,7 @@ public class MarginService {
 
         var remainingCollateral = collateral - amount;
         if (remainingCollateral <= 0) {
-            var requiredCollateral = marginRequirementsRepo.findByContractAndStartAfterAndEndBeforeOrderByStartDesc(contract, DateTime.now(), contract.getExpirationDate().toDateTimeAtStartOfDay())
+            var requiredCollateral = marginRequirementsRepo.findByContractAndPeriod(contract, LocalDate.now(), contract.getExpirationDate())
                     .map(MarginRequirement::getInitialMargin)
                     .orElse(contract.getSpecifications().getInitialMargin());
 

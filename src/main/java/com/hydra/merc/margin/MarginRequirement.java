@@ -3,7 +3,7 @@ package com.hydra.merc.margin;
 import com.hydra.merc.contract.Contract;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.joda.time.Period;
 
 import javax.persistence.*;
@@ -27,6 +27,6 @@ public class MarginRequirement {
 
     private float initialMargin;
 
-    private DateTime start = DateTime.now();
-    private DateTime end = start.plus(DEFAULT_REQUIREMENT_PERIOD);
+    private LocalDate startDate = LocalDate.now();
+    private LocalDate endDate = startDate.plus(DEFAULT_REQUIREMENT_PERIOD);
 }
