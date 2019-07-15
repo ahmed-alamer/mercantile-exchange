@@ -1,5 +1,7 @@
 package com.hydra.merc.margin;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hydra.merc.account.Account;
 import com.hydra.merc.position.Position;
 import lombok.Data;
@@ -21,13 +23,25 @@ public class Margin {
     private long id;
 
     @ManyToOne
+    @JsonIgnore
     private Position position;
 
     @ManyToOne
+    @JsonIgnore
     private Account account;
 
     private float collateral;
 
-    private DateTime created;
+    private DateTime created = DateTime.now();
+
+    @JsonGetter
+    public long getPositionId() {
+        return position.getId();
+    }
+
+    @JsonGetter
+    public String getAccountId() {
+        return account.getId();
+    }
 
 }

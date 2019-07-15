@@ -107,12 +107,12 @@ public class MarginService {
 
             var marginCallLedgerTransaction = new LedgerTransaction()
                     .setAmount(marginCallAmount)
-                    .setDebit(counterparts.longCounterpart.getAccount())
+                    .setDebit(counterparts.shortCounterpart.getAccount())
                     .setCredit(Account.MARGINS_ACCOUNT);
 
             var marginCall = new MarginTransaction()
                     .setDebit(marginCallAmount)
-                    .setMargin(counterparts.longCounterpart)
+                    .setMargin(counterparts.shortCounterpart)
                     .setType(MarginTransactionType.MARGIN_CALL);
 
             marginTransactions.add(marginCall);

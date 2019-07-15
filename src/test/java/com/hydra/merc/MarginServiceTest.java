@@ -30,7 +30,6 @@ import org.springframework.test.context.junit4.SpringRunner;
  * Created By ahmed on 07-13-2019
  */
 @Slf4j
-//@DataJpaTest
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @TestPropertySource(properties = {
@@ -40,7 +39,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 })
 public class MarginServiceTest {
     private static final ObjectMapper JSON = new ObjectMapper().registerModule(new JodaModule());
-    ;
 
     @Autowired
     private AccountsRepo accountsRepo;
@@ -72,7 +70,7 @@ public class MarginServiceTest {
     }
 
     @Test
-    public void testWiring() throws JsonProcessingException {
+    public void testDailySettlement() throws JsonProcessingException {
         var seller = accountService.openTradingAccount(new Account());
         var buyer = accountService.openTradingAccount(new Account());
 
