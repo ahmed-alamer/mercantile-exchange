@@ -55,8 +55,10 @@ public class PositionsService {
                 DateTime.now()
         );
 
-        var initialMargin = marginRequirement.map(MarginRequirement::getInitialMargin)
+        var contractInitialMargin = marginRequirement.map(MarginRequirement::getInitialMargin)
                 .orElse(contract.getSpecifications().getInitialMargin());
+
+        var initialMargin = contractInitialMargin * position.getQuantity();
 
         var failedAccounts = new ArrayList<Account>();
         if (buyerBalance < initialMargin) {
@@ -79,7 +81,6 @@ public class PositionsService {
         var fee = feesService.getContractFee(contract);
 
         var fees = ledger.debitFees(position, fee);
-
 
         positionsRepo.save(position);
 

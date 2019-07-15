@@ -25,7 +25,7 @@ public class DailyPrice {
     @ManyToOne
     private Contract contract;
 
-    private LocalDate day;
+    private LocalDate day = LocalDate.now();
 
     private DateTime created = DateTime.now();
 }

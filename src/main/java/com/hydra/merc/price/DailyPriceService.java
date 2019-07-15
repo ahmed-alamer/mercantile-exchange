@@ -28,8 +28,11 @@ public class DailyPriceService {
     }
 
     public Optional<DailyPrice> getPrice(Contract contract, LocalDate date) {
-        return dailyPriceRepo.findContractAndDay(contract, date);
+        return dailyPriceRepo.findDistinctByContractAndDay(contract, date);
     }
 
 
+    public DailyPrice recordPrice(DailyPrice price) {
+        return dailyPriceRepo.save(price);
+    }
 }

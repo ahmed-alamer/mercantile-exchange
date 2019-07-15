@@ -49,7 +49,7 @@ public class MarginService {
         var openPrice = position.getPrice();
         var settlementPrice = dailyPriceService.getPrice(contract).orElseThrow().getPrice();
 
-        var delta = settlementPrice - openPrice;
+        var delta = (settlementPrice - openPrice) * position.getQuantity();
 
         var counterparts = buildCounterparts(position, delta);
 
@@ -91,11 +91,13 @@ public class MarginService {
         var ledgerTransactions = Lists.<LedgerTransaction>newArrayList();
         var marginTransactions = Lists.<MarginTransaction>newArrayList();
 
-        marginTransactions.add(creditMargin(counterparts.longCounterpart, delta));
+        var amount = Math.abs(delta);
+
+        marginTransactions.add(creditMargin(counterparts.longCounterpart, amount));
 
         var collateral = getBalance(counterparts.shortCounterpart);
 
-        var remainingCollateral = collateral - delta;
+        var remainingCollateral = collateral - amount;
         if (remainingCollateral <= 0) {
             var requiredCollateral = marginRequirementsRepo.findByContractAndStartAfterAndEndBeforeOrderByStartDesc(contract, DateTime.now(), contract.getExpirationDate().toDateTimeAtStartOfDay())
                     .map(MarginRequirement::getInitialMargin)
@@ -116,7 +118,7 @@ public class MarginService {
             marginTransactions.add(marginCall);
             ledgerTransactions.add(ledger.submitTransaction(marginCallLedgerTransaction));
         } else {
-            marginTransactions.add(debitMargin(counterparts.shortCounterpart, delta));
+            marginTransactions.add(debitMargin(counterparts.shortCounterpart, amount));
         }
 
         return DailySettlement.of(counterparts.longCounterpart, counterparts.shortCounterpart, ledgerTransactions, marginTransactions);

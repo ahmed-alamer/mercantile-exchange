@@ -31,6 +31,14 @@ public class Ledger {
         return totalCredit - totalDebit;
     }
 
+    public LedgerTransaction deposit(Account account, float amount) {
+        var depositTransaction = new LedgerTransaction()
+                .setAmount(amount)
+                .setCredit(account)
+                .setDebit(Account.CASH_ACCOUNT);
+
+        return ledgerTransactionsRepo.save(depositTransaction);
+    }
 
     @Transactional
     public List<LedgerTransaction> debitMargin(Position position, float initialMargin) {

@@ -18,6 +18,7 @@ public class Account {
     public static final Account MARGINS_ACCOUNT = new Account().setType(AccountType.INTERNAL);
     public static final Account SETTLEMENTS_ACCOUNT = new Account().setType(AccountType.INTERNAL);
     public static final Account FEES_ACCOUNT = new Account().setType(AccountType.INTERNAL);
+    public static final Account CASH_ACCOUNT = new Account().setType(AccountType.INTERNAL);
 
     @Id
     private String id = UUID.randomUUID().toString();

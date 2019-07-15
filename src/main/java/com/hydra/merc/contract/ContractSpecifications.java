@@ -1,11 +1,14 @@
 package com.hydra.merc.contract;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import org.joda.time.Period;
+import org.joda.time.format.ISOPeriodFormat;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.Transient;
 
 /**
  * Created By ahmed on 07-13-2019
@@ -25,6 +28,25 @@ public class ContractSpecifications {
 
     private float tickSize;
 
+    @Transient
+    @JsonIgnore
     private Period settlementPeriod = DEFAULT_SETTLEMENT_PERIOD;
+
+    private String settlementPeriodRaw;
+
+    @Transient
+    @JsonIgnore
+    public Period getSettlementPeriod() {
+        return ISOPeriodFormat.standard().parsePeriod(settlementPeriodRaw);
+    }
+
+    public ContractSpecifications setSettlementPeriod(Period period) {
+        this.settlementPeriod = period;
+        this.settlementPeriodRaw = ISOPeriodFormat.standard().print(settlementPeriod);
+
+        return this;
+    }
+
+
 
 }

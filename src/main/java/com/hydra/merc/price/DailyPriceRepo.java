@@ -11,5 +11,5 @@ import java.util.Optional;
  */
 public interface DailyPriceRepo extends CrudRepository<DailyPrice, Long> {
 
-    Optional<DailyPrice> findContractAndDay(Contract contract, LocalDate day);
+    Optional<DailyPrice> findDistinctByContractAndDay(Contract contract, LocalDate day);
 }
