@@ -7,5 +7,5 @@ import org.springframework.stereotype.Repository;
  * Created By ahmed on 07-13-2019
  */
 @Repository
-public interface ContractSpecificationsRepo extends CrudRepository<ContractSpecifications, Long> {
+public interface ContractSpecificationsRepo extends CrudRepository<ContractSpecifications, String> {
 }
