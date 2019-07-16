@@ -29,24 +29,10 @@ public class Order {
     @Enumerated(EnumType.STRING)
     private Direction direction;
 
+    @Enumerated(EnumType.STRING)
+    private OrderStatus status = OrderStatus.OPEN;
+
     private int quantity;
 
     private DateTime expirationTime;
-
-    public enum Direction {
-        LONG {
-            @Override
-            public Direction getAnte() {
-                return SHORT;
-            }
-        },
-        SHORT {
-            @Override
-            public Direction getAnte() {
-                return LONG;
-            }
-        };
-
-        public abstract Direction getAnte();
-    }
 }

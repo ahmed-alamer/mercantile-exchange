@@ -22,9 +22,9 @@ import java.util.Map;
  */
 @Service
 public class OrderBook {
-    private final Map<Order.Direction, Multimap<Contract, Order>> openInterest = ImmutableMap.of(
-            Order.Direction.LONG, ArrayListMultimap.create(),
-            Order.Direction.SHORT, ArrayListMultimap.create()
+    private final Map<Direction, Multimap<Contract, Order>> openInterest = ImmutableMap.of(
+            Direction.LONG, ArrayListMultimap.create(),
+            Direction.SHORT, ArrayListMultimap.create()
     );
 
 
@@ -43,7 +43,7 @@ public class OrderBook {
         this.dailyPriceService = dailyPriceService;
     }
 
-    public Order submitOrder(Account account, Contract contract, Order.Direction direction, int quantity) {
+    public Order submitOrder(Account account, Contract contract, Direction direction, int quantity) {
         var order = new Order()
                 .setAccount(account)
                 .setContract(contract)
@@ -56,6 +56,7 @@ public class OrderBook {
 
         var maybeMatch = anteBook.values().stream().filter(ante -> ante.getQuantity() == quantity).findFirst();
         if (maybeMatch.isEmpty()) {
+            ordersRepo.save(order);
             book.put(contract, order);
         } else {
             Order match = maybeMatch.get();
@@ -71,10 +72,15 @@ public class OrderBook {
             positionsService.openPosition(position); // TODO: Notification Service
 
             anteBook.values().removeIf(anteOrder -> anteOrder.getId() == match.getId());
+
+            order.setStatus(OrderStatus.FILLED);
+            match.setStatus(OrderStatus.FILLED);
+
+            ordersRepo.save(match);
+            ordersRepo.save(order);
         }
 
-
-        return ordersRepo.save(order);
+        return order;
     }
 
     private float getPrice(Contract contract) {
