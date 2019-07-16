@@ -71,8 +71,8 @@ public class MarginServiceTest {
 
     @Test
     public void testDailySettlement() throws JsonProcessingException {
-        var seller = accountService.openTradingAccount(new Account());
-        var buyer = accountService.openTradingAccount(new Account());
+        var seller = accountService.openTradingAccount();
+        var buyer = accountService.openTradingAccount();
 
         ledger.deposit(seller, 1000);
         ledger.deposit(buyer, 1000);
