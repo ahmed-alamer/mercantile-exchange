@@ -2,13 +2,16 @@ package com.hydra.merc.order;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.hydra.merc.account.Account;
 import com.hydra.merc.contract.Contract;
 import com.hydra.merc.position.Position;
 import com.hydra.merc.position.PositionType;
 import com.hydra.merc.position.PositionsService;
+import com.hydra.merc.price.DailyPrice;
 import com.hydra.merc.price.DailyPriceService;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +33,8 @@ public class OrderBook {
     private final PositionsService positionsService;
 
     private final DailyPriceService dailyPriceService;
+
+    private Map<Contract, DailyPrice> currentPrices = Maps.newHashMap();
 
     @Autowired
     public OrderBook(OrdersRepo ordersRepo, PositionsService positionsService, DailyPriceService dailyPriceService) {
@@ -58,17 +63,25 @@ public class OrderBook {
             var position = new Position()
                     .setType(PositionType.OPEN)
                     .setQuantity(quantity)
-                    .setPrice(0f)
+                    .setPrice(getPrice(contract))
                     .setSeller(match.getAccount())
                     .setBuyer(account)
                     .setContract(contract);
 
             positionsService.openPosition(position); // TODO: Notification Service
 
-            //TODO: Remove the ante order
+            anteBook.values().removeIf(anteOrder -> anteOrder.getId() == match.getId());
         }
 
 
         return ordersRepo.save(order);
+    }
+
+    private float getPrice(Contract contract) {
+        if (currentPrices.get(contract).getDay().isBefore(LocalDate.now())) {
+            currentPrices.put(contract, dailyPriceService.getPrice(contract).orElseThrow());
+        }
+
+        return currentPrices.computeIfAbsent(contract, currentContract -> dailyPriceService.getPrice(currentContract).orElseThrow()).getPrice();
     }
 }
