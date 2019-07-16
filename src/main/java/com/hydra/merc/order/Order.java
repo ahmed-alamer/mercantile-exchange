@@ -1,4 +1,4 @@
-package com.hydra.merc.position;
+package com.hydra.merc.order;
 
 import com.hydra.merc.account.Account;
 import com.hydra.merc.contract.Contract;
@@ -9,12 +9,12 @@ import org.joda.time.DateTime;
 import javax.persistence.*;
 
 /**
- * Created By aalamer on 07-10-2019
+ * Created By aalamer on 07-15-2019
  */
 @Data
 @Entity
 @Accessors(chain = true)
-public class Position {
+public class Order {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,19 +24,15 @@ public class Position {
     private Contract contract;
 
     @ManyToOne
-    private Account seller;
-
-    @ManyToOne
-    private Account buyer;
-
-    private float price;
-    private int quantity;
-
-    private DateTime openTime = DateTime.now();
+    private Account account;
 
     @Enumerated(EnumType.STRING)
-    private PositionType type;
+    private Direction direction;
 
-    private boolean open = true;
+    @Enumerated(EnumType.STRING)
+    private OrderStatus status = OrderStatus.OPEN;
 
+    private int quantity;
+
+    private DateTime expirationTime;
 }
