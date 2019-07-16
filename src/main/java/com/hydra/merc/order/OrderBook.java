@@ -59,7 +59,7 @@ public class OrderBook {
             ordersRepo.save(order);
             book.put(contract, order);
         } else {
-            Order match = maybeMatch.get();
+            var match = maybeMatch.get();
 
             var position = new Position()
                     .setType(PositionType.OPEN)
@@ -81,6 +81,18 @@ public class OrderBook {
         }
 
         return order;
+    }
+
+    public Order cancelOrder(Order order) {
+        var direction = order.getDirection();
+        var contract = order.getContract();
+
+        var removed = openInterest.get(direction).get(contract).removeIf(existingOrder -> existingOrder.getId() == order.getId());
+        if (removed) {
+            order.setStatus(OrderStatus.CANCELLED);
+        }
+
+        return ordersRepo.save(order);
     }
 
     private float getPrice(Contract contract) {
