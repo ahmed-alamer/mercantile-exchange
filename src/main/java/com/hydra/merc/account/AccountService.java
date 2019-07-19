@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Created By ahmed on 07-13-2019
@@ -27,5 +28,9 @@ public class AccountService {
 
     public List<Account> all() {
         return Lists.newArrayList(accountsRepo.findAll());
+    }
+
+    public Optional<Account> findById(String accountId) {
+        return accountsRepo.findById(accountId);
     }
 }

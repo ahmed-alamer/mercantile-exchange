@@ -1,8 +1,10 @@
 package com.hydra.merc.ledger;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.hydra.merc.account.Account;
 import com.hydra.merc.position.Position;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +33,13 @@ public class Ledger {
         return totalCredit - totalDebit;
     }
 
+    public List<LedgerTransaction> getTransactionsForPeriod(Account account, DateTime start, DateTime end) {
+        return ImmutableList.<LedgerTransaction>builder()
+                .addAll(ledgerTransactionsRepo.findAllByCredit(account))
+                .addAll(ledgerTransactionsRepo.findAllByDebit(account))
+                .build();
+    }
+
     public LedgerTransaction deposit(Account account, float amount) {
         var depositTransaction = new LedgerTransaction()
                 .setAmount(amount)
@@ -57,6 +66,7 @@ public class Ledger {
     }
 
 
+    @Transactional
     public List<LedgerTransaction> debitFees(Position position, float fee) {
         var underlying = position.getContract().getSpecifications().getUnderlying();
         var price = position.getPrice();

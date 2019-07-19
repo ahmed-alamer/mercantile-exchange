@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Created By aalamer on 07-11-2019
@@ -41,6 +42,28 @@ public class MarginService {
         this.marginRequirementsRepo = marginRequirementsRepo;
         this.marginTransactionsRepo = marginTransactionsRepo;
         this.ledger = ledger;
+    }
+
+    public List<MarginTransaction> getMarginTransactions(Account account, Position position) {
+        var margin = getMargin(account, position);
+
+        return marginTransactionsRepo.findAllByMargin(margin);
+    }
+
+
+    public float getMarginBalance(Account account, Position position) {
+        var margin = getMargin(account, position);
+
+        return getBalance(margin);
+    }
+
+    private Margin getMargin(Account account, Position position) {
+        Optional<Margin> byPositionAndAccount = marginsRepo.findByPositionAndAccount(position, account);
+
+        if (byPositionAndAccount.isEmpty()) {
+            throw new IllegalArgumentException(String.format("Account %s is doesn't have a margin for position %s", account, position));
+        }
+        return byPositionAndAccount.get();
     }
 
     public DailySettlement runDailySettlement(Position position) {
@@ -158,7 +181,7 @@ public class MarginService {
                 .build();
     }
 
-    public MarginCloseResult closeMargin(Account account, Margin margin) {
+    private MarginCloseResult closeMargin(Account account, Margin margin) {
         var balance = getBalance(margin);
         var transaction = new MarginTransaction()
                 .setMargin(margin)

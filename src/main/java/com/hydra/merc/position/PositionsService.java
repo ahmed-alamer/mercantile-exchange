@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -103,6 +104,10 @@ public class PositionsService {
                 .setPosition(position)
                 .addTransactions(closeResult.stream().map(MarginService.MarginCloseResult::getLedgerTransaction).collect(Collectors.toList()))
                 .addMarinTransactions(closeResult.stream().map(MarginService.MarginCloseResult::getMarginTransaction).collect(Collectors.toList()));
+    }
+
+    public Optional<Position> findById(long positionId) {
+        return positionsRepo.findById(positionId);
     }
 
     public enum TicketType {
