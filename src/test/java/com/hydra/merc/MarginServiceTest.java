@@ -1,8 +1,8 @@
 package com.hydra.merc;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
+import com.google.common.io.Resources;
 import com.hydra.merc.account.Account;
 import com.hydra.merc.account.AccountService;
 import com.hydra.merc.account.AccountsRepo;
@@ -10,9 +10,11 @@ import com.hydra.merc.contract.Contract;
 import com.hydra.merc.contract.ContractService;
 import com.hydra.merc.contract.ContractSpecifications;
 import com.hydra.merc.ledger.Ledger;
+import com.hydra.merc.margin.DailySettlement;
 import com.hydra.merc.margin.MarginService;
 import com.hydra.merc.position.Position;
 import com.hydra.merc.position.PositionsService;
+import com.hydra.merc.position.Ticket;
 import com.hydra.merc.price.DailyPrice;
 import com.hydra.merc.price.DailyPriceService;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +27,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
+
+import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created By ahmed on 07-13-2019
@@ -70,7 +76,7 @@ public class MarginServiceTest {
     }
 
     @Test
-    public void testDailySettlement() throws JsonProcessingException {
+    public void testDailySettlement() throws IOException {
         var seller = accountService.openTradingAccount();
         var buyer = accountService.openTradingAccount();
 
@@ -104,11 +110,20 @@ public class MarginServiceTest {
                 .setQuantity(2);
 
         var ticket = positionsService.openPosition(position);
-        log.debug(String.format("Ticket: %s", JSON.writeValueAsString(ticket)));
+        log.debug("Ticket: {}", JSON.writeValueAsString(ticket));
 
         var dailySettlement = marginService.runDailySettlement(ticket.getPosition());
-
         log.debug("Settlement: {}", JSON.writeValueAsString(dailySettlement));
 
+
+        var expectedTicket = JSON.readValue(Resources.getResource("open-poistion-ticket.json"), Ticket.class);
+        var expectedSettlement = JSON.readValue(Resources.getResource("position-daily-settlement.json"), DailySettlement.class);
+
+        // Adjust the buyer and seller IDs
+        expectedTicket.getPosition().getBuyer().setId(ticket.getPosition().getBuyer().getId());
+        expectedTicket.getPosition().getSeller().setId(ticket.getPosition().getSeller().getId());
+
+        assertEquals(expectedTicket, ticket);
+        assertEquals(expectedSettlement, dailySettlement);
     }
 }

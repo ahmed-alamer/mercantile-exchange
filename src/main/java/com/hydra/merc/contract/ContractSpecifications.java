@@ -32,7 +32,11 @@ public class ContractSpecifications {
     @JsonIgnore
     private Period settlementPeriod = DEFAULT_SETTLEMENT_PERIOD;
 
-    private String settlementPeriodRaw;
+    private String settlementPeriodRaw = writeSettlementPeriod(DEFAULT_SETTLEMENT_PERIOD);
+
+    private static String writeSettlementPeriod(Period settlementPeriod) {
+        return ISOPeriodFormat.standard().print(settlementPeriod);
+    }
 
     @Transient
     @JsonIgnore
@@ -42,11 +46,10 @@ public class ContractSpecifications {
 
     public ContractSpecifications setSettlementPeriod(Period period) {
         this.settlementPeriod = period;
-        this.settlementPeriodRaw = ISOPeriodFormat.standard().print(settlementPeriod);
+        this.settlementPeriodRaw = writeSettlementPeriod(settlementPeriod);
 
         return this;
     }
-
 
 
 }

@@ -1,0 +1,124 @@
+{
+  "type": "FILL",
+  "position": {
+    "id": 1,
+    "contract": {
+      "id": 1,
+      "specifications": {
+        "symbol": "SLR",
+        "underlying": 1,
+        "initialMargin": 100.0,
+        "tickSize": 0.1,
+        "settlementPeriodRaw": "P1D"
+      },
+      "expirationDate": [
+        2019,
+        9,
+        7
+      ],
+      "issueDate": [
+        2019,
+        8,
+        8
+      ],
+      "fee": 0.001
+    },
+    "seller": {
+      "id": "f3d573cc-e668-44fd-acd7-df58e5f26f97",
+      "type": "TRADING"
+    },
+    "buyer": {
+      "id": "c24224b2-d544-4dd2-a56c-b3cf192aff14",
+      "type": "TRADING"
+    },
+    "price": 1.0,
+    "quantity": 2,
+    "openTime": 1565287058493,
+    "type": null,
+    "open": true
+  },
+  "transactions": [
+    {
+      "id": 3,
+      "credit": {
+        "id": "84138986-fa1e-45f5-a2ec-cdd0baee47ef",
+        "type": "INTERNAL"
+      },
+      "debit": {
+        "id": "c24224b2-d544-4dd2-a56c-b3cf192aff14",
+        "type": "TRADING"
+      },
+      "amount": 200.0,
+      "timestamp": 1565287058541
+    },
+    {
+      "id": 4,
+      "credit": {
+        "id": "84138986-fa1e-45f5-a2ec-cdd0baee47ef",
+        "type": "INTERNAL"
+      },
+      "debit": {
+        "id": "f3d573cc-e668-44fd-acd7-df58e5f26f97",
+        "type": "TRADING"
+      },
+      "amount": 200.0,
+      "timestamp": 1565287058541
+    },
+    {
+      "id": 0,
+      "credit": {
+        "id": "331b8d5e-4311-4cd7-a5fa-1cbc0ba2a0d0",
+        "type": "INTERNAL"
+      },
+      "debit": {
+        "id": "c24224b2-d544-4dd2-a56c-b3cf192aff14",
+        "type": "TRADING"
+      },
+      "amount": 0.001,
+      "timestamp": 1565287058551
+    },
+    {
+      "id": 0,
+      "credit": {
+        "id": "331b8d5e-4311-4cd7-a5fa-1cbc0ba2a0d0",
+        "type": "INTERNAL"
+      },
+      "debit": {
+        "id": "f3d573cc-e668-44fd-acd7-df58e5f26f97",
+        "type": "TRADING"
+      },
+      "amount": 0.001,
+      "timestamp": 1565287058551
+    }
+  ],
+  "marginTransactions": [
+    {
+      "id": 1,
+      "margin": {
+        "id": 1,
+        "collateral": 200.0,
+        "created": 1565287058554,
+        "positionId": 1,
+        "accountId": "c24224b2-d544-4dd2-a56c-b3cf192aff14"
+      },
+      "debit": 0.0,
+      "credit": 200.0,
+      "type": "OPEN"
+    },
+    {
+      "id": 2,
+      "margin": {
+        "id": 2,
+        "collateral": 200.0,
+        "created": 1565287058558,
+        "positionId": 1,
+        "accountId": "f3d573cc-e668-44fd-acd7-df58e5f26f97"
+      },
+      "debit": 0.0,
+      "credit": 200.0,
+      "type": "OPEN"
+    }
+  ],
+  "failedAccounts": null,
+  "timestamp": 1565287058561
+}
