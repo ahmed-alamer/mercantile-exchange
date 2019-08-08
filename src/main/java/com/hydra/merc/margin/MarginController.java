@@ -35,7 +35,7 @@ public class MarginController {
     }
 
 
-    @GetMapping("/{accountId}/{positionId}")
+    @GetMapping("/{accountId}/{positionId}/transactions")
     public ResponseEntity getTransactions(@PathVariable("accountId") String accountId, @PathVariable("positionId") long positionId) throws AccountNotFound, PositionNotFound {
         var account = getAccount(accountId);
         var position = getPosition(positionId);
@@ -45,7 +45,7 @@ public class MarginController {
         return ResponseEntity.ok(transactions);
     }
 
-    @GetMapping("/{accountId}/{positionId}")
+    @GetMapping("/{accountId}/{positionId}/balance")
     public ResponseEntity<MarginBalance> getMarginBalance(@PathVariable("accountId") String accountId, @PathVariable("positionId") long positionId) throws AccountNotFound, PositionNotFound {
         var account = getAccount(accountId);
         var position = getPosition(positionId);
@@ -74,7 +74,7 @@ public class MarginController {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor(staticName = "of")
-    private static class MarginBalance {
+    public static class MarginBalance {
         private String accountId;
         private long positionId;
         private float balance;

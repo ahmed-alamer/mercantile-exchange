@@ -30,8 +30,8 @@ import org.springframework.test.context.junit4.SpringRunner;
  * Created By ahmed on 07-13-2019
  */
 @Slf4j
-@RunWith(SpringRunner.class)
 @SpringBootTest
+@RunWith(SpringRunner.class)
 @TestPropertySource(properties = {
         "logging.level.com.hydra=DEBUG",
         "spring.jpa.hibernate.ddl-auto=create",
