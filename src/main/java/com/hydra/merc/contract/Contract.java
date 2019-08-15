@@ -2,8 +2,8 @@ package com.hydra.merc.contract;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.datatype.joda.deser.LocalDateDeserializer;
-import com.fasterxml.jackson.datatype.joda.ser.LocalDateSerializer;
+import com.hydra.merc.json.LocalDateDeserializer;
+import com.hydra.merc.json.LocalDateSerializer;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import org.joda.time.LocalDate;
@@ -27,7 +27,10 @@ public class Contract {
     private ContractSpecifications specifications;
 
     @JsonSerialize(using = LocalDateSerializer.class)
+    @JsonDeserialize(using = LocalDateDeserializer.class)
     private LocalDate expirationDate;
+
+    @JsonSerialize(using = LocalDateSerializer.class)
     @JsonDeserialize(using = LocalDateDeserializer.class)
     private LocalDate issueDate;
 

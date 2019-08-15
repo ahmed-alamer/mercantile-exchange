@@ -1,7 +1,11 @@
 package com.hydra.merc.position;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Lists;
 import com.hydra.merc.account.Account;
+import com.hydra.merc.json.DateTimeDeserializer;
+import com.hydra.merc.json.DateTimeSerializer;
 import com.hydra.merc.ledger.LedgerTransaction;
 import com.hydra.merc.margin.MarginTransaction;
 import lombok.Data;
@@ -24,6 +28,8 @@ public final class Ticket {
 
     private List<Account> failedAccounts;
 
+    @JsonSerialize(using = DateTimeSerializer.class)
+    @JsonDeserialize(using = DateTimeDeserializer.class)
     private DateTime timestamp = DateTime.now();
 
 

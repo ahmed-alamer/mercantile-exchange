@@ -2,7 +2,11 @@ package com.hydra.merc.margin;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hydra.merc.account.Account;
+import com.hydra.merc.json.DateTimeDeserializer;
+import com.hydra.merc.json.DateTimeSerializer;
 import com.hydra.merc.position.Position;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -32,6 +36,8 @@ public class Margin {
 
     private float collateral;
 
+    @JsonSerialize(using = DateTimeSerializer.class)
+    @JsonDeserialize(using = DateTimeDeserializer.class)
     private DateTime created = DateTime.now();
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)

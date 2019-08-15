@@ -1,6 +1,10 @@
 package com.hydra.merc.fee;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hydra.merc.contract.Contract;
+import com.hydra.merc.json.DateTimeDeserializer;
+import com.hydra.merc.json.DateTimeSerializer;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import org.joda.time.DateTime;
@@ -24,7 +28,12 @@ public class ContractFee {
 
     private float fee;
 
+    @JsonSerialize(using = DateTimeSerializer.class)
+    @JsonDeserialize(using = DateTimeDeserializer.class)
     private DateTime start;
+
+    @JsonSerialize(using = DateTimeSerializer.class)
+    @JsonDeserialize(using = DateTimeDeserializer.class)
     private DateTime end;
 
 

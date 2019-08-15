@@ -1,7 +1,12 @@
 package com.hydra.merc.margin;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.hydra.merc.json.DateTimeDeserializer;
+import com.hydra.merc.json.DateTimeSerializer;
 import lombok.Data;
 import lombok.experimental.Accessors;
+import org.joda.time.DateTime;
 
 import javax.persistence.*;
 
@@ -23,6 +28,9 @@ public class MarginTransaction {
     private float debit;
     private float credit;
 
+    @JsonSerialize(using = DateTimeSerializer.class)
+    @JsonDeserialize(using = DateTimeDeserializer.class)
+    private DateTime timestamp = DateTime.now();
 
     @Enumerated(EnumType.STRING)
     private MarginTransactionType type;

@@ -2,16 +2,16 @@
   "buyer": {
     "id": 2,
     "collateral": 200.0,
-    "created": 1565283622548,
+    "created": 1565498373325,
     "positionId": 1,
-    "accountId": "639e2b56-b602-4f74-8e23-6887e69f6f28"
+    "accountId": "11f024e8-8ab3-44be-9d1e-224db4c2e32a"
   },
   "seller": {
     "id": 1,
     "collateral": 200.0,
-    "created": 1565283622545,
+    "created": 1565498373322,
     "positionId": 1,
-    "accountId": "8d2c61e8-eb88-48f5-ae9e-ed17ced46633"
+    "accountId": "6c4e6244-1cbf-49f2-b277-6acf9999a817"
   },
   "ledgerTransactions": [],
   "marginTransactions": [
@@ -20,12 +20,13 @@
       "margin": {
         "id": 2,
         "collateral": 200.0,
-        "created": 1565283622548,
+        "created": 1565498373325,
         "positionId": 1,
-        "accountId": "639e2b56-b602-4f74-8e23-6887e69f6f28"
+        "accountId": "11f024e8-8ab3-44be-9d1e-224db4c2e32a"
       },
       "debit": 0.0,
       "credit": 0.20000005,
+      "timestamp": 1565498373416,
       "type": "SETTLEMENT"
     },
     {
@@ -33,12 +34,13 @@
       "margin": {
         "id": 1,
         "collateral": 200.0,
-        "created": 1565283622545,
+        "created": 1565498373322,
         "positionId": 1,
-        "accountId": "8d2c61e8-eb88-48f5-ae9e-ed17ced46633"
+        "accountId": "6c4e6244-1cbf-49f2-b277-6acf9999a817"
       },
       "debit": 0.20000005,
       "credit": 0.0,
+      "timestamp": 1565498373423,
       "type": "SETTLEMENT"
     }
   ]

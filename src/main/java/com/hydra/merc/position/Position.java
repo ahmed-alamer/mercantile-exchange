@@ -1,7 +1,11 @@
 package com.hydra.merc.position;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hydra.merc.account.Account;
 import com.hydra.merc.contract.Contract;
+import com.hydra.merc.json.DateTimeDeserializer;
+import com.hydra.merc.json.DateTimeSerializer;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import org.joda.time.DateTime;
@@ -32,6 +36,8 @@ public class Position {
     private float price;
     private int quantity;
 
+    @JsonSerialize(using = DateTimeSerializer.class)
+    @JsonDeserialize(using = DateTimeDeserializer.class)
     private DateTime openTime = DateTime.now();
 
     @Enumerated(EnumType.STRING)

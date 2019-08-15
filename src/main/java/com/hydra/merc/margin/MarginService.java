@@ -15,7 +15,9 @@ import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Created By aalamer on 07-11-2019
@@ -99,29 +101,38 @@ public class MarginService {
 
         var remainingCollateral = collateral - amount;
         if (remainingCollateral <= 0) {
-            var requiredCollateral = marginRequirementsRepo.findByContractAndPeriod(contract, LocalDate.now(), contract.getExpirationDate())
-                    .map(MarginRequirement::getInitialMargin)
-                    .orElse(contract.getSpecifications().getInitialMargin());
-
-            var marginCallAmount = remainingCollateral + requiredCollateral;
-
-            var marginCallLedgerTransaction = new LedgerTransaction()
-                    .setAmount(marginCallAmount)
-                    .setDebit(counterparts.shortCounterpart.getAccount())
-                    .setCredit(Account.MARGINS_ACCOUNT);
-
-            var marginCall = new MarginTransaction()
-                    .setDebit(marginCallAmount)
-                    .setMargin(counterparts.shortCounterpart)
-                    .setType(MarginTransactionType.MARGIN_CALL);
-
-            marginTransactions.add(marginCall);
-            ledgerTransactions.add(ledger.submitTransaction(marginCallLedgerTransaction));
+            processMarginCall(contract, counterparts, remainingCollateral, ledgerTransactions, marginTransactions);
         } else {
             marginTransactions.add(debitMargin(counterparts.shortCounterpart, amount));
         }
 
         return DailySettlement.of(counterparts.longCounterpart, counterparts.shortCounterpart, ledgerTransactions, marginTransactions);
+    }
+
+    private void processMarginCall(Contract contract,
+                                   Counterparts counterparts,
+                                   float remainingCollateral,
+                                   ArrayList<LedgerTransaction> ledgerTransactions,
+                                   ArrayList<MarginTransaction> marginTransactions) {
+
+        var requiredCollateral = marginRequirementsRepo.findByContractAndPeriod(contract, LocalDate.now(), contract.getExpirationDate())
+                .map(MarginRequirement::getInitialMargin)
+                .orElse(contract.getSpecifications().getInitialMargin());
+
+        var marginCallAmount = remainingCollateral + requiredCollateral;
+
+        var marginCallLedgerTransaction = new LedgerTransaction()
+                .setAmount(marginCallAmount)
+                .setDebit(counterparts.shortCounterpart.getAccount())
+                .setCredit(Account.MARGINS_ACCOUNT);
+
+        var marginCall = new MarginTransaction()
+                .setDebit(marginCallAmount)
+                .setMargin(counterparts.shortCounterpart)
+                .setType(MarginTransactionType.MARGIN_CALL);
+
+        marginTransactions.add(marginCall);
+        ledgerTransactions.add(ledger.submitTransaction(marginCallLedgerTransaction));
     }
 
     private MarginTransaction creditMargin(Margin margin, float amount) {
@@ -200,6 +211,10 @@ public class MarginService {
                 .setMargin(margin);
 
         return marginTransactionsRepo.save(initialMarginTransaction);
+    }
+
+    public Optional<Margin> getMargin(Account account, Position position) {
+        return marginsRepo.findByAccountAndPosition(account, position);
     }
 
     @Data

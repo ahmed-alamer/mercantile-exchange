@@ -1,7 +1,11 @@
 package com.hydra.merc.order;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hydra.merc.account.Account;
 import com.hydra.merc.contract.Contract;
+import com.hydra.merc.json.DateTimeDeserializer;
+import com.hydra.merc.json.DateTimeSerializer;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import org.joda.time.DateTime;
@@ -34,5 +38,7 @@ public class Order {
 
     private int quantity;
 
+    @JsonSerialize(using = DateTimeSerializer.class)
+    @JsonDeserialize(using = DateTimeDeserializer.class)
     private DateTime expirationTime;
 }
