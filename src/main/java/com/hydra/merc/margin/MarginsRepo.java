@@ -1,11 +1,10 @@
 package com.hydra.merc.margin;
 
 import com.hydra.merc.account.Account;
-import com.hydra.merc.position.Position;
+import com.hydra.merc.contract.Contract;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -13,8 +12,5 @@ import java.util.Optional;
  */
 @Repository
 public interface MarginsRepo extends CrudRepository<Margin, Long> {
-
-    List<Margin> findAllByPosition(Position position);
-
-    Optional<Margin> findByAccountAndPosition(Account account, Position position);
+    Optional<Margin> findByAccountAndContract(Account account, Contract contract);
 }
