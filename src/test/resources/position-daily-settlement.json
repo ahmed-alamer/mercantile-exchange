@@ -1,0 +1,47 @@
+{
+  "buyer": {
+    "id": 2,
+    "collateral": 200.0,
+    "created": 1565498373325,
+    "positionId": 1,
+    "accountId": "11f024e8-8ab3-44be-9d1e-224db4c2e32a"
+  },
+  "seller": {
+    "id": 1,
+    "collateral": 200.0,
+    "created": 1565498373322,
+    "positionId": 1,
+    "accountId": "6c4e6244-1cbf-49f2-b277-6acf9999a817"
+  },
+  "ledgerTransactions": [],
+  "marginTransactions": [
+    {
+      "id": 3,
+      "margin": {
+        "id": 2,
+        "collateral": 200.0,
+        "created": 1565498373325,
+        "positionId": 1,
+        "accountId": "11f024e8-8ab3-44be-9d1e-224db4c2e32a"
+      },
+      "debit": 0.0,
+      "credit": 0.20000005,
+      "timestamp": 1565498373416,
+      "type": "SETTLEMENT"
+    },
+    {
+      "id": 4,
+      "margin": {
+        "id": 1,
+        "collateral": 200.0,
+        "created": 1565498373322,
+        "positionId": 1,
+        "accountId": "6c4e6244-1cbf-49f2-b277-6acf9999a817"
+      },
+      "debit": 0.20000005,
+      "credit": 0.0,
+      "timestamp": 1565498373423,
+      "type": "SETTLEMENT"
+    }
+  ]
+}

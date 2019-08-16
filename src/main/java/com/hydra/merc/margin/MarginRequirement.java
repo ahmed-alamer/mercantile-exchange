@@ -1,6 +1,10 @@
 package com.hydra.merc.margin;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hydra.merc.contract.Contract;
+import com.hydra.merc.json.LocalDateDeserializer;
+import com.hydra.merc.json.LocalDateSerializer;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import org.joda.time.LocalDate;
@@ -27,6 +31,11 @@ public class MarginRequirement {
 
     private float initialMargin;
 
+    @JsonSerialize(using = LocalDateSerializer.class)
+    @JsonDeserialize(using = LocalDateDeserializer.class)
     private LocalDate startDate = LocalDate.now();
+
+    @JsonSerialize(using = LocalDateSerializer.class)
+    @JsonDeserialize(using = LocalDateDeserializer.class)
     private LocalDate endDate = startDate.plus(DEFAULT_REQUIREMENT_PERIOD);
 }

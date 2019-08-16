@@ -1,6 +1,12 @@
 package com.hydra.merc.price;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hydra.merc.contract.Contract;
+import com.hydra.merc.json.DateTimeDeserializer;
+import com.hydra.merc.json.DateTimeSerializer;
+import com.hydra.merc.json.LocalDateDeserializer;
+import com.hydra.merc.json.LocalDateSerializer;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import org.joda.time.DateTime;
@@ -25,7 +31,11 @@ public class DailyPrice {
     @ManyToOne
     private Contract contract;
 
+    @JsonSerialize(using = LocalDateSerializer.class)
+    @JsonDeserialize(using = LocalDateDeserializer.class)
     private LocalDate day = LocalDate.now();
 
+    @JsonSerialize(using = DateTimeSerializer.class)
+    @JsonDeserialize(using = DateTimeDeserializer.class)
     private DateTime created = DateTime.now();
 }
