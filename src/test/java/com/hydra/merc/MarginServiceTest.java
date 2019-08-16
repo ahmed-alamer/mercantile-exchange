@@ -10,12 +10,10 @@ import com.hydra.merc.contract.ContractService;
 import com.hydra.merc.contract.ContractSpecifications;
 import com.hydra.merc.ledger.Ledger;
 import com.hydra.merc.margin.MarginService;
-import com.hydra.merc.position.Position;
 import com.hydra.merc.position.PositionsService;
 import com.hydra.merc.price.DailyPrice;
 import com.hydra.merc.price.DailyPriceService;
 import lombok.extern.slf4j.Slf4j;
-import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.junit.Before;
 import org.junit.Test;
@@ -102,15 +100,7 @@ public class MarginServiceTest {
 
     @Test
     public void testDailySettlementPriceDown() throws IOException {
-        var position = new Position()
-                .setBuyer(buyer)
-                .setSeller(seller)
-                .setContract(contract)
-                .setOpenTime(DateTime.now())
-                .setPrice(1.2f)
-                .setQuantity(2);
-
-        var ticket = positionsService.openPosition(position);
+        var ticket = positionsService.openPosition(contract, buyer, seller, 1.2f, 2);
         log.debug("Ticket: {}", JSON.writeValueAsString(ticket));
 
         assertEquals(ticket.getBuyer().getMarginTransaction().getCredit(), 200f, 0);
@@ -140,15 +130,7 @@ public class MarginServiceTest {
 
     @Test
     public void testDailySettlementPriceUp() throws IOException {
-        var position = new Position()
-                .setBuyer(buyer)
-                .setSeller(seller)
-                .setContract(contract)
-                .setOpenTime(DateTime.now())
-                .setPrice(1f)
-                .setQuantity(2);
-
-        var ticket = positionsService.openPosition(position);
+        var ticket = positionsService.openPosition(contract, buyer, seller, 1f, 2);
         log.debug("Ticket: {}", JSON.writeValueAsString(ticket));
 
         assertEquals(ticket.getBuyer().getMarginTransaction().getCredit(), 200f, 0);

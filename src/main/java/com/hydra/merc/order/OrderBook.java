@@ -6,8 +6,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.hydra.merc.account.Account;
 import com.hydra.merc.contract.Contract;
-import com.hydra.merc.position.Position;
-import com.hydra.merc.position.PositionType;
 import com.hydra.merc.position.PositionsService;
 import com.hydra.merc.price.DailyPrice;
 import com.hydra.merc.price.DailyPriceService;
@@ -61,15 +59,7 @@ public class OrderBook {
         } else {
             var match = maybeMatch.get();
 
-            var position = new Position()
-                    .setType(PositionType.OPEN)
-                    .setQuantity(quantity)
-                    .setPrice(getPrice(contract))
-                    .setSeller(match.getAccount())
-                    .setBuyer(account)
-                    .setContract(contract);
-
-            positionsService.openPosition(position); // TODO: Notification Service
+            positionsService.openPosition(contract, account, match.getAccount(), getPrice(contract), quantity); // TODO: Notification Service
 
             anteBook.values().removeIf(anteOrder -> anteOrder.getId() == match.getId());
 

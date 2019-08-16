@@ -1,7 +1,7 @@
 package com.hydra.merc.ledger;
 
 import com.hydra.merc.account.Account;
-import com.hydra.merc.position.Position;
+import com.hydra.merc.contract.Contract;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -42,40 +42,36 @@ public class Ledger {
     }
 
     @Transactional
-    public TradeResult debitMargin(Position position, float initialMargin) {
+    public TradeResult debitMargin(Account buyer, Account seller, float initialMargin) {
         var buyerTransaction = new LedgerTransaction()
                 .setAmount(initialMargin)
                 .setCredit(Account.MARGINS_ACCOUNT)
-                .setDebit(position.getBuyer());
+                .setDebit(buyer);
 
         var sellerTransaction = new LedgerTransaction()
                 .setAmount(initialMargin)
                 .setCredit(Account.MARGINS_ACCOUNT)
-                .setDebit(position.getSeller());
+                .setDebit(seller);
 
 
         return TradeResult.of(buyerTransaction, sellerTransaction);
     }
 
 
-    public TradeResult debitFees(Position position, float fee) {
-        var underlying = position.getContract().getSpecifications().getUnderlying();
-        var price = position.getPrice();
-
+    public TradeResult debitFees(Contract contract, Account buyer, Account seller, float price, float fee) {
+        var underlying = contract.getSpecifications().getUnderlying();
         var notional = price * underlying;
-
         var feeAmount = notional * fee;
 
         var buyerFee = new LedgerTransaction()
                 .setAmount(feeAmount)
                 .setCredit(Account.FEES_ACCOUNT)
-                .setDebit(position.getBuyer());
+                .setDebit(buyer);
 
         var sellerFee = new LedgerTransaction()
                 .setAmount(feeAmount)
                 .setCredit(Account.FEES_ACCOUNT)
-                .setDebit(position.getSeller());
-
+                .setDebit(seller);
 
         return TradeResult.of(buyerFee, sellerFee);
     }
