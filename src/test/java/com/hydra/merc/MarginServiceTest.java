@@ -26,10 +26,9 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNull;
 
 /**
  * Created By ahmed on 07-13-2019
@@ -114,8 +113,14 @@ public class MarginServiceTest {
         var ticket = positionsService.openPosition(position);
         log.debug("Ticket: {}", JSON.writeValueAsString(ticket));
 
-        assertEquals(ticket.getMarginTransactions().get(0).getCredit(), 200f, 0);
-        assertEquals(ticket.getMarginTransactions().get(1).getCredit(), 200f, 0);
+        assertEquals(ticket.getBuyer().getMarginTransaction().getCredit(), 200f, 0);
+        assertEquals(ticket.getSeller().getMarginTransaction().getCredit(), 200f, 0);
+
+        assertEquals(ticket.getBuyer().getLedgerTransaction().getAmount(), 200f, 0);
+        assertEquals(ticket.getBuyer().getLedgerTransaction().getDebit(), buyer);
+
+        assertEquals(ticket.getSeller().getLedgerTransaction().getAmount(), 200f, 0);
+        assertEquals(ticket.getSeller().getLedgerTransaction().getDebit(), seller);
 
 
         // Price goes down
@@ -125,18 +130,11 @@ public class MarginServiceTest {
         var dailySettlement = marginService.runDailySettlement(ticket.getPosition());
         log.debug("Settlement: {}", JSON.writeValueAsString(dailySettlement));
 
-        var marginTransactions = dailySettlement.getMarginTransactions()
-                .stream()
-                .collect(Collectors.groupingBy(transaction -> transaction.getMargin().getId()));
+        assertEquals(dailySettlement.getLongLeg().getMarginTransaction().getCredit(), 0.4000001f, 0);
+        assertEquals(dailySettlement.getShortLeg().getMarginTransaction().getDebit(), 0.4000001f, 0);
 
-        // if the optionals are empty, then margins weren't created! Not ideal, but I can't think of a better way to test this!
-        var buyerMargin = marginService.getMargin(ticket.getPosition().getBuyer(), ticket.getPosition()).get();
-        var sellerMargin = marginService.getMargin(ticket.getPosition().getSeller(), ticket.getPosition()).get();
-
-        assertEquals(marginTransactions.get(buyerMargin.getId()).get(0).getDebit(), 0.4000001f, 0);
-        assertEquals(marginTransactions.get(sellerMargin.getId()).get(0).getCredit(), 0.4000001f, 0);
-
-        assertTrue(dailySettlement.getLedgerTransactions().isEmpty());
+        assertNull(dailySettlement.getShortLeg().getMarginCall());
+        assertNull(dailySettlement.getLongLeg().getMarginCall());
     }
 
 
@@ -153,28 +151,20 @@ public class MarginServiceTest {
         var ticket = positionsService.openPosition(position);
         log.debug("Ticket: {}", JSON.writeValueAsString(ticket));
 
-        assertEquals(ticket.getMarginTransactions().get(0).getCredit(), 200f, 0);
-        assertEquals(ticket.getMarginTransactions().get(1).getCredit(), 200f, 0);
+        assertEquals(ticket.getBuyer().getMarginTransaction().getCredit(), 200f, 0);
+        assertEquals(ticket.getSeller().getMarginTransaction().getCredit(), 200f, 0);
 
-
-        // Price goes down
+        // Price goes uo
         var price = new DailyPrice().setContract(contract).setPrice(1.2f);
         dailyPriceService.recordPrice(price);
 
         var dailySettlement = marginService.runDailySettlement(ticket.getPosition());
         log.debug("Settlement: {}", JSON.writeValueAsString(dailySettlement));
 
-        var marginTransactions = dailySettlement.getMarginTransactions()
-                .stream()
-                .collect(Collectors.groupingBy(transaction -> transaction.getMargin().getId()));
+        assertEquals(dailySettlement.getShortLeg().getMarginTransaction().getDebit(), 0.4000001f, 0);
+        assertEquals(dailySettlement.getLongLeg().getMarginTransaction().getCredit(), 0.4000001f, 0);
 
-        // if the optionals are empty, then margins weren't created! Not ideal, but I can't think of a better way to test this!
-        var buyerMargin = marginService.getMargin(ticket.getPosition().getBuyer(), ticket.getPosition()).get();
-        var sellerMargin = marginService.getMargin(ticket.getPosition().getSeller(), ticket.getPosition()).get();
-
-        assertEquals(marginTransactions.get(buyerMargin.getId()).get(0).getCredit(), 0.4000001f, 0);
-        assertEquals(marginTransactions.get(sellerMargin.getId()).get(0).getDebit(), 0.4000001f, 0);
-
-        assertTrue(dailySettlement.getLedgerTransactions().isEmpty());
+        assertNull(dailySettlement.getShortLeg().getMarginCall());
+        assertNull(dailySettlement.getLongLeg().getMarginCall());
     }
 }

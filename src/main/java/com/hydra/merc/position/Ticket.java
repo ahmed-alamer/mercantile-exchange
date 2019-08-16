@@ -2,17 +2,15 @@ package com.hydra.merc.position;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.common.collect.Lists;
-import com.hydra.merc.account.Account;
 import com.hydra.merc.json.DateTimeDeserializer;
 import com.hydra.merc.json.DateTimeSerializer;
 import com.hydra.merc.ledger.LedgerTransaction;
 import com.hydra.merc.margin.MarginTransaction;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.joda.time.DateTime;
-
-import java.util.List;
 
 /**
  * Created By aalamer on 07-11-2019
@@ -20,26 +18,31 @@ import java.util.List;
 @Data
 @Accessors(chain = true)
 public final class Ticket {
-    private PositionsService.TicketType type;
+
     private Position position;
+    private PositionsService.TicketType type;
 
-    private List<LedgerTransaction> transactions = Lists.newArrayList();
-    private List<MarginTransaction> marginTransactions = Lists.newArrayList();
-
-    private List<Account> failedAccounts;
+    private Leg buyer;
+    private Leg seller;
 
     @JsonSerialize(using = DateTimeSerializer.class)
     @JsonDeserialize(using = DateTimeDeserializer.class)
     private DateTime timestamp = DateTime.now();
 
+    @Data
+    @NoArgsConstructor
+    @Accessors(chain = true)
+    @AllArgsConstructor(staticName = "of")
+    public static final class Leg {
+        private MarginTransaction marginTransaction;
+        private LedgerTransaction ledgerTransaction;
+        private LedgerTransaction fee;
 
-    public Ticket addTransactions(List<LedgerTransaction> transactions) {
-        this.transactions.addAll(transactions);
-        return this;
+        public static Leg of(MarginTransaction marginTransaction, LedgerTransaction ledgerTransaction) {
+            return new Leg()
+                    .setMarginTransaction(marginTransaction)
+                    .setLedgerTransaction(ledgerTransaction);
+        }
     }
 
-    public Ticket addMarinTransactions(List<MarginTransaction> transactions) {
-        this.marginTransactions.addAll(transactions);
-        return this;
-    }
 }

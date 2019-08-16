@@ -1,6 +1,5 @@
 package com.hydra.merc.position;
 
-import com.hydra.merc.account.Account;
 import com.hydra.merc.fee.FeesService;
 import com.hydra.merc.ledger.Ledger;
 import com.hydra.merc.margin.MarginRequirement;
@@ -10,9 +9,6 @@ import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.stream.Collectors;
 
 /**
  * Created By aalamer on 07-10-2019
@@ -49,60 +45,50 @@ public class PositionsService {
         var buyerBalance = ledger.getAccountBalance(buyer);
         var sellerBalance = ledger.getAccountBalance(seller);
 
-        var marginRequirement = marginRequirementsRepo.findByContractAndPeriod(
-                contract,
-                LocalDate.now(),
-                LocalDate.now().plusDays(10)
-        );
+        var startDate = LocalDate.now();
+        var endDate = startDate.plusDays(10);
+        var marginRequirement = marginRequirementsRepo.findByContractAndPeriod(contract, startDate, endDate);
 
-        var contractInitialMargin = marginRequirement.map(MarginRequirement::getInitialMargin)
-                .orElse(contract.getSpecifications().getInitialMargin());
+        var defaultInitialMargin = contract.getSpecifications().getInitialMargin();
+        var contractInitialMargin = marginRequirement.map(MarginRequirement::getInitialMargin).orElse(defaultInitialMargin);
 
         var initialMargin = contractInitialMargin * position.getQuantity();
 
-        var failedAccounts = new ArrayList<Account>();
-        if (buyerBalance < initialMargin) {
-            failedAccounts.add(buyer);
-        }
-
-        if (sellerBalance < initialMargin) {
-            failedAccounts.add(seller);
-        }
-
-        if (!failedAccounts.isEmpty()) {
+        if (buyerBalance < initialMargin || sellerBalance < initialMargin) {
             return new Ticket()
-                    .setType(TicketType.INSUFFICIENT_FUNDS)
-                    .setFailedAccounts(failedAccounts);
+                    .setPosition(position)
+                    .setType(TicketType.INSUFFICIENT_FUNDS);
         }
 
 
         var debits = ledger.debitMargin(position, initialMargin);
 
-        var fee = feesService.getContractFee(contract);
-
-        var fees = ledger.debitFees(position, fee);
+        var contractFee = feesService.getContractFee(contract);
+        var fees = ledger.debitFees(position, contractFee);
 
         positionsRepo.save(position);
 
-        var marginTransactions = marginService.openMargins(position, initialMargin);
+        var marginOpenResult = marginService.openMargins(position, initialMargin);
 
         return new Ticket()
                 .setType(TicketType.FILL)
                 .setPosition(position)
-                .addTransactions(debits)
-                .addTransactions(fees)
-                .addMarinTransactions(marginTransactions);
+                .setBuyer(Ticket.Leg.of(marginOpenResult.getBuyer(), debits.getBuyer(), fees.getBuyer()))
+                .setSeller(Ticket.Leg.of(marginOpenResult.getSeller(), debits.getSeller(), fees.getSeller()));
     }
 
     // Winding down a position at expiration
     public Ticket closePosition(Position position) {
         var closeResult = marginService.closeMargins(position);
 
+        var buyer = closeResult.getBuyer();
+        var seller = closeResult.getSeller();
+
         return new Ticket()
                 .setType(TicketType.CONTRACT_EXPIRATION)
                 .setPosition(position)
-                .addTransactions(closeResult.stream().map(MarginService.MarginCloseResult::getLedgerTransaction).collect(Collectors.toList()))
-                .addMarinTransactions(closeResult.stream().map(MarginService.MarginCloseResult::getMarginTransaction).collect(Collectors.toList()));
+                .setBuyer(Ticket.Leg.of(buyer.getMarginTransaction(), buyer.getLedgerTransaction()))
+                .setSeller(Ticket.Leg.of(seller.getMarginTransaction(), seller.getLedgerTransaction()));
     }
 
     public enum TicketType {

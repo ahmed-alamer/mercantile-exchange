@@ -1,13 +1,14 @@
 package com.hydra.merc.ledger;
 
-import com.google.common.collect.Lists;
 import com.hydra.merc.account.Account;
 import com.hydra.merc.position.Position;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
@@ -41,7 +42,7 @@ public class Ledger {
     }
 
     @Transactional
-    public List<LedgerTransaction> debitMargin(Position position, float initialMargin) {
+    public TradeResult debitMargin(Position position, float initialMargin) {
         var buyerTransaction = new LedgerTransaction()
                 .setAmount(initialMargin)
                 .setCredit(Account.MARGINS_ACCOUNT)
@@ -53,11 +54,11 @@ public class Ledger {
                 .setDebit(position.getSeller());
 
 
-        return Lists.newArrayList(ledgerTransactionsRepo.saveAll(Arrays.asList(buyerTransaction, sellerTransaction)));
+        return TradeResult.of(buyerTransaction, sellerTransaction);
     }
 
 
-    public List<LedgerTransaction> debitFees(Position position, float fee) {
+    public TradeResult debitFees(Position position, float fee) {
         var underlying = position.getContract().getSpecifications().getUnderlying();
         var price = position.getPrice();
 
@@ -76,10 +77,11 @@ public class Ledger {
                 .setDebit(position.getSeller());
 
 
-        return Lists.newArrayList(Arrays.asList(buyerFee, sellerFee));
+        return TradeResult.of(buyerFee, sellerFee);
     }
 
-    private float totalTransactionsNotional(Account account, Function<Account, List<LedgerTransaction>> transactionsSupplier) {
+    private float totalTransactionsNotional(Account account,
+                                            Function<Account, List<LedgerTransaction>> transactionsSupplier) {
         return transactionsTotal(transactionsSupplier.apply(account));
     }
 
@@ -93,5 +95,13 @@ public class Ledger {
 
     public LedgerTransaction submitTransaction(LedgerTransaction transaction) {
         return ledgerTransactionsRepo.save(transaction);
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor(staticName = "of")
+    public static final class TradeResult {
+        private LedgerTransaction buyer;
+        private LedgerTransaction seller;
     }
 }
