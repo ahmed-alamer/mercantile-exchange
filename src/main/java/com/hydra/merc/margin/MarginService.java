@@ -5,16 +5,11 @@ import com.hydra.merc.account.Account;
 import com.hydra.merc.contract.Contract;
 import com.hydra.merc.ledger.Ledger;
 import com.hydra.merc.ledger.LedgerTransaction;
-import com.hydra.merc.position.Position;
-import com.hydra.merc.price.DailyPriceService;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.hydra.merc.settlement.Settlement;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -28,113 +23,22 @@ public class MarginService {
     private final MarginTransactionsRepo marginTransactionsRepo;
 
     private final Ledger ledger;
-    private final DailyPriceService dailyPriceService;
 
     @Autowired
     public MarginService(MarginsRepo marginsRepo,
-                         DailyPriceService dailyPriceService,
                          MarginRequirementsRepo marginRequirementsRepo,
                          MarginTransactionsRepo marginTransactionsRepo,
                          Ledger ledger) {
         this.marginsRepo = marginsRepo;
-        this.dailyPriceService = dailyPriceService;
         this.marginRequirementsRepo = marginRequirementsRepo;
         this.marginTransactionsRepo = marginTransactionsRepo;
         this.ledger = ledger;
     }
 
-    public DailySettlement runDailySettlement(Position position) {
-        var contract = position.getContract();
 
-        var openPrice = position.getPrice();
-        var settlementPrice = dailyPriceService.getPrice(contract).orElseThrow().getPrice();
-
-        var delta = (settlementPrice - openPrice) * position.getQuantity();
-
-        var counterparts = buildCounterparts(position, delta);
-        //TODO: Make Better!
-        if (counterparts.isEmpty()) {
-            throw new IllegalArgumentException(String.format("Unable to find counterparts for position: %s", position));
-        }
-
-        return settle(contract, counterparts.get(), delta);
-    }
-
-    private Optional<Counterparts> buildCounterparts(Position position, float delta) {
-        if (delta > 0) {
-            return Optional.of(Counterparts.of(position.getBuyer(), position.getSeller()));
-        }
-
-        return Optional.of(Counterparts.of(position.getSeller(), position.getBuyer()));
-    }
-
-    private Margin getMargin(List<Margin> margins, Account buyer) {
-        return margins.stream().filter(margin -> buyer.getId().equals(margin.getAccount().getId())).findFirst().orElseThrow();
-    }
-
-    public float getBalance(Margin margin) {
-        return marginTransactionsRepo.findAllByMargin(margin)
-                .stream()
-                .map(transaction -> transaction.getCredit() - transaction.getDebit())
-                .reduce(Float::sum)
-                .orElse(0f);
-    }
-
-    private DailySettlement settle(Contract contract, Counterparts counterparts, float delta) {
-        var amount = Math.abs(delta);
-
-        var longLeg = creditMargin(counterparts.longCounterpart, amount);
-        var shortLeg = debitMargin(counterparts.shortCounterpart, contract, amount);
-
-
-        return DailySettlement.of(longLeg, shortLeg);
-    }
-
-    private DailySettlement.Leg creditMargin(Margin margin, float amount) {
-        var transaction = new MarginTransaction()
-                .setCredit(amount)
-                .setMargin(margin)
-                .setType(MarginTransactionType.SETTLEMENT);
-
-        marginTransactionsRepo.save(transaction);
-
-        return DailySettlement.Leg.create()
-                .setMargin(margin)
-                .setMarginTransaction(transaction);
-    }
-
-    private DailySettlement.Leg debitMargin(Margin margin, Contract contract, float amount) {
-        var currentCollateralBalance = getBalance(margin);
-
-        var requiredCollateral = marginRequirementsRepo.findByContractAndPeriod(contract, LocalDate.now(), contract.getExpirationDate())
-                .map(MarginRequirement::getInitialMargin)
-                .orElse(contract.getSpecifications().getInitialMargin());
-
-        var remainingCollateral = currentCollateralBalance - amount;
-        if (remainingCollateral < requiredCollateral) {
-            var marginCall = processMarginCall(margin, remainingCollateral, requiredCollateral);
-
-            return DailySettlement.Leg.create()
-                    .setMargin(margin)
-                    .setMarginTransaction(marginCall.getMarginTransaction())
-                    .setMarginCall(marginCall.getLedgerTransaction());
-        }
-
-        var transaction = new MarginTransaction()
-                .setDebit(amount)
-                .setMargin(margin)
-                .setType(MarginTransactionType.SETTLEMENT);
-
-        marginTransactionsRepo.save(transaction);
-
-        return DailySettlement.Leg.create()
-                .setMargin(margin)
-                .setMarginTransaction(transaction);
-    }
-
-    private MarginSettlementResult processMarginCall(Margin margin,
-                                                     float remainingCollateral,
-                                                     float requiredCollateral) {
+    private MarginSettlementResult issueMarginCall(Margin margin,
+                                                   float remainingCollateral,
+                                                   float requiredCollateral) {
         var marginCallAmount = requiredCollateral - remainingCollateral;
 
         var marginCallLedgerTransaction = new LedgerTransaction()
@@ -163,37 +67,28 @@ public class MarginService {
         var buyerResult = openMargin(contract, buyer, price, quantity, initialMargin);
         var sellerResult = openMargin(contract, seller, price, quantity, initialMargin);
 
-        return MarginOpenResult.of(buyerResult, sellerResult, initialMargin);
+        return MarginResult.MarginOpenResult.of(buyerResult, sellerResult, initialMargin);
     }
 
-    private Optional<InsufficientFundForMargin> checkBalances(Account buyer, Account seller, float initialMargin) {
+    private Optional<MarginResult.InsufficientFundForMargin> checkBalances(Account buyer,
+                                                                           Account seller,
+                                                                           float initialMargin) {
         var buyerBalance = ledger.getAccountBalance(buyer);
         var sellerBalance = ledger.getAccountBalance(seller);
 
         if (buyerBalance < initialMargin && sellerBalance < initialMargin) {
-            return Optional.of(InsufficientFundForMargin.of(ImmutableList.of(buyer, seller)));
+            return Optional.of(MarginResult.InsufficientFundForMargin.of(ImmutableList.of(buyer, seller)));
         }
 
         if (buyerBalance < initialMargin) {
-            return Optional.of(InsufficientFundForMargin.of(ImmutableList.of(buyer)));
+            return Optional.of(MarginResult.InsufficientFundForMargin.of(ImmutableList.of(buyer)));
         }
 
         if (sellerBalance < initialMargin) {
-            return Optional.of(InsufficientFundForMargin.of(ImmutableList.of(seller)));
+            return Optional.of(MarginResult.InsufficientFundForMargin.of(ImmutableList.of(seller)));
         }
 
         return Optional.empty();
-    }
-
-    private float getInitialMargin(Contract contract, int quantity) {
-        var startDate = LocalDate.now();
-        var endDate = startDate.plusDays(10);
-        var marginRequirement = marginRequirementsRepo.findByContractAndPeriod(contract, startDate, endDate);
-
-        var defaultInitialMargin = contract.getSpecifications().getInitialMargin();
-        var contractInitialMargin = marginRequirement.map(MarginRequirement::getInitialMargin).orElse(defaultInitialMargin);
-
-        return contractInitialMargin * quantity;
     }
 
     public MarginSettlementResult closeMargin(Margin margin) {
@@ -224,6 +119,61 @@ public class MarginService {
         return MarginSettlementResult.of(transaction, ledgerTransaction);
     }
 
+    public Optional<Margin> getMargin(Account account, Contract contract) {
+        return marginsRepo.findByAccountAndContract(account, contract);
+    }
+
+    public float getBalance(Margin margin) {
+        return marginTransactionsRepo.findAllByMargin(margin)
+                .stream()
+                .map(transaction -> transaction.getCredit() - transaction.getDebit())
+                .reduce(Float::sum)
+                .orElse(0f);
+    }
+
+    public Settlement.Leg creditMargin(Margin margin, float amount) {
+        var transaction = new MarginTransaction()
+                .setCredit(amount)
+                .setMargin(margin)
+                .setType(MarginTransactionType.SETTLEMENT);
+
+        marginTransactionsRepo.save(transaction);
+
+        return Settlement.Leg.create()
+                .setMargin(margin)
+                .setMarginTransaction(transaction);
+    }
+
+    public Settlement.Leg debitMargin(Margin margin, Contract contract, float amount) {
+        var currentCollateralBalance = getBalance(margin);
+
+        var requiredCollateral = marginRequirementsRepo.findByContractAndPeriod(contract, LocalDate.now(), contract.getExpirationDate())
+                .map(MarginRequirement::getInitialMargin)
+                .orElse(contract.getSpecifications().getInitialMargin());
+
+        var remainingCollateral = currentCollateralBalance - amount;
+        if (remainingCollateral < requiredCollateral) {
+            var marginCall = issueMarginCall(margin, remainingCollateral, requiredCollateral);
+
+            return Settlement.Leg.create()
+                    .setMargin(margin)
+                    .setMarginTransaction(marginCall.getMarginTransaction())
+                    .setMarginCall(marginCall.getLedgerTransaction());
+        }
+
+        var transaction = new MarginTransaction()
+                .setDebit(amount)
+                .setMargin(margin)
+                .setType(MarginTransactionType.SETTLEMENT);
+
+        marginTransactionsRepo.save(transaction);
+
+        return Settlement.Leg.create()
+                .setMargin(margin)
+                .setMarginTransaction(transaction);
+    }
+
+
     private MarginTransaction openMargin(Contract contract,
                                          Account account,
                                          float price,
@@ -246,68 +196,17 @@ public class MarginService {
         return marginTransactionsRepo.save(initialMarginTransaction);
     }
 
-    public Optional<Margin> getMargin(Account account, Contract contract) {
-        return marginsRepo.findByAccountAndContract(account, contract);
+    private float getInitialMargin(Contract contract, int quantity) {
+        var startDate = LocalDate.now();
+        var endDate = startDate.plusDays(10);
+        var marginRequirement = marginRequirementsRepo.findByContractAndPeriod(contract, startDate, endDate);
+
+        var defaultInitialMargin = contract.getSpecifications().getInitialMargin();
+        var contractInitialMargin = marginRequirement.map(MarginRequirement::getInitialMargin)
+                                                     .orElse(defaultInitialMargin);
+
+        return contractInitialMargin * quantity;
     }
 
-    @Data
-    @AllArgsConstructor(staticName = "of")
-    public static final class MarginSettlementResult {
-        private final MarginTransaction marginTransaction;
-        private final LedgerTransaction ledgerTransaction;
-    }
-
-    public interface MarginResult {
-        Type getType();
-
-        enum Type {
-            SETTLEMENT,
-            OPEN,
-            INSUFFICIENT_FUNDS;
-        }
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor(staticName = "of")
-    public static final class InsufficientFundForMargin implements MarginResult {
-        private List<Account> accounts;
-
-        @Override
-        public Type getType() {
-            return Type.INSUFFICIENT_FUNDS;
-        }
-    }
-
-    @Data
-    @AllArgsConstructor(staticName = "of")
-    public static final class MarginSettlement implements MarginResult {
-        private final MarginSettlementResult buyer;
-        private final MarginSettlementResult seller;
-
-        @Override
-        public Type getType() {
-            return Type.SETTLEMENT;
-        }
-    }
-    @Data
-    @AllArgsConstructor(staticName = "of")
-    public static final class MarginOpenResult implements MarginResult {
-        private final MarginTransaction buyer;
-        private final MarginTransaction seller;
-        private float initialMargin;
-
-        @Override
-        public Type getType() {
-            return Type.OPEN;
-        }
-    }
-
-    @Data
-    @AllArgsConstructor(staticName = "of")
-    private static final class Counterparts {
-        private final Margin longCounterpart;
-        private final Margin shortCounterpart;
-    }
 
 }

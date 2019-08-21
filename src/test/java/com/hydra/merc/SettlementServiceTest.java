@@ -9,10 +9,10 @@ import com.hydra.merc.contract.Contract;
 import com.hydra.merc.contract.ContractService;
 import com.hydra.merc.contract.ContractSpecifications;
 import com.hydra.merc.ledger.Ledger;
-import com.hydra.merc.margin.MarginService;
 import com.hydra.merc.position.PositionsService;
 import com.hydra.merc.price.DailyPrice;
 import com.hydra.merc.price.DailyPriceService;
+import com.hydra.merc.settlement.SettlementService;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.LocalDate;
 import org.junit.Before;
@@ -39,7 +39,7 @@ import static org.junit.Assert.assertNull;
         "spring.jpa.hibernate.ddl-auto=create",
         "spring.jpa.properties.jadira.usertype.autoRegisterUserTypes=true"
 })
-public class MarginServiceTest {
+public class SettlementServiceTest {
     private static final ObjectMapper JSON = new ObjectMapper().registerModule(new JodaModule());
 
     @Autowired
@@ -61,7 +61,7 @@ public class MarginServiceTest {
     private PositionsService positionsService;
 
     @Autowired
-    private MarginService marginService;
+    private SettlementService settlementService;
 
     private Account seller;
     private Account buyer;
@@ -117,14 +117,14 @@ public class MarginServiceTest {
         var price = new DailyPrice().setContract(contract).setPrice(1f);
         dailyPriceService.recordPrice(price);
 
-        var dailySettlement = marginService.runDailySettlement(ticket.getPosition());
-        log.debug("Settlement: {}", JSON.writeValueAsString(dailySettlement));
+        var settlement = settlementService.settle(ticket.getPosition());
+        log.debug("Settlement: {}", JSON.writeValueAsString(settlement));
 
-        assertEquals(dailySettlement.getLongLeg().getMarginTransaction().getCredit(), 0.4000001f, 0);
-        assertEquals(dailySettlement.getShortLeg().getMarginTransaction().getDebit(), 0.4000001f, 0);
+        assertEquals(settlement.getLongLeg().getMarginTransaction().getCredit(), 0.4000001f, 0);
+        assertEquals(settlement.getShortLeg().getMarginTransaction().getDebit(), 0.4000001f, 0);
 
-        assertNull(dailySettlement.getShortLeg().getMarginCall());
-        assertNull(dailySettlement.getLongLeg().getMarginCall());
+        assertNull(settlement.getShortLeg().getMarginCall());
+        assertNull(settlement.getLongLeg().getMarginCall());
     }
 
 
@@ -140,13 +140,13 @@ public class MarginServiceTest {
         var price = new DailyPrice().setContract(contract).setPrice(1.2f);
         dailyPriceService.recordPrice(price);
 
-        var dailySettlement = marginService.runDailySettlement(ticket.getPosition());
-        log.debug("Settlement: {}", JSON.writeValueAsString(dailySettlement));
+        var settlement = settlementService.settle(ticket.getPosition());
+        log.debug("Settlement: {}", JSON.writeValueAsString(settlement));
 
-        assertEquals(dailySettlement.getShortLeg().getMarginTransaction().getDebit(), 0.4000001f, 0);
-        assertEquals(dailySettlement.getLongLeg().getMarginTransaction().getCredit(), 0.4000001f, 0);
+        assertEquals(settlement.getShortLeg().getMarginTransaction().getDebit(), 0.4000001f, 0);
+        assertEquals(settlement.getLongLeg().getMarginTransaction().getCredit(), 0.4000001f, 0);
 
-        assertNull(dailySettlement.getShortLeg().getMarginCall());
-        assertNull(dailySettlement.getLongLeg().getMarginCall());
+        assertNull(settlement.getShortLeg().getMarginCall());
+        assertNull(settlement.getLongLeg().getMarginCall());
     }
 }

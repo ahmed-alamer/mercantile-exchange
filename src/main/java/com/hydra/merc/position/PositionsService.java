@@ -4,10 +4,13 @@ import com.hydra.merc.account.Account;
 import com.hydra.merc.contract.Contract;
 import com.hydra.merc.fee.FeesService;
 import com.hydra.merc.ledger.Ledger;
+import com.hydra.merc.margin.MarginResult;
 import com.hydra.merc.margin.MarginService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * Created By aalamer on 07-10-2019
@@ -38,39 +41,14 @@ public class PositionsService {
 
         switch (marginResult.getType()) {
             case OPEN:
-                var marginOpenResult = (MarginService.MarginOpenResult) marginResult;
-
-                var initialMargin = marginOpenResult.getInitialMargin();
-
-                var debits = ledger.debitMargin(buyer, seller, initialMargin);
-
-                var contractFee = feesService.getContractFee(contract);
-                var fees = ledger.debitFees(contract, buyer, seller, price, contractFee);
-
-                var position = new Position()
-                        .setBuyer(marginOpenResult.getBuyer().getMargin())
-                        .setSeller(marginOpenResult.getSeller().getMargin())
-                        .setContract(contract)
-                        .setPrice(price)
-                        .setQuantity(quantity)
-                        .setCollateral(initialMargin)
-                        .setType(PositionType.OPEN);
-
-                positionsRepo.save(position);
-
-                return new Ticket()
-                        .setType(TicketType.FILL)
-                        .setPosition(position)
-                        .setBuyer(Ticket.Leg.of(marginOpenResult.getBuyer(), debits.getBuyer(), fees.getBuyer()))
-                        .setSeller(Ticket.Leg.of(marginOpenResult.getSeller(), debits.getSeller(), fees.getSeller()));
+                return handleOpen(contract, buyer, seller, price, quantity, (MarginResult.MarginOpenResult) marginResult);
             case INSUFFICIENT_FUNDS:
-                return new Ticket().setType(TicketType.INSUFFICIENT_FUNDS);
+                return handleInsufficientFunds();
             default:
                 throw new IllegalStateException(String.format("Unexpected return type: %s", marginResult.getType()));
         }
     }
 
-    // Winding down a position at expiration
     public Ticket closePosition(Position position) {
         var buyer = marginService.closeMargin(position.getBuyer());
         var seller = marginService.closeMargin(position.getSeller());
@@ -80,6 +58,47 @@ public class PositionsService {
                 .setPosition(position)
                 .setBuyer(Ticket.Leg.of(buyer.getMarginTransaction(), buyer.getLedgerTransaction()))
                 .setSeller(Ticket.Leg.of(seller.getMarginTransaction(), seller.getLedgerTransaction()));
+    }
+
+    private Ticket handleInsufficientFunds() {
+        return new Ticket().setType(TicketType.INSUFFICIENT_FUNDS);
+    }
+
+    private Ticket handleOpen(Contract contract,
+                              Account buyer,
+                              Account seller,
+                              float price,
+                              int quantity,
+                              MarginResult.MarginOpenResult marginOpenResult) {
+
+        var initialMargin = marginOpenResult.getInitialMargin();
+
+        var debits = ledger.debitMargin(buyer, seller, initialMargin);
+
+        var contractFee = feesService.getContractFee(contract);
+        var fees = ledger.debitFees(contract, buyer, seller, price, contractFee);
+
+        var position = new Position()
+                .setBuyer(marginOpenResult.getBuyer().getMargin())
+                .setSeller(marginOpenResult.getSeller().getMargin())
+                .setContract(contract)
+                .setPrice(price)
+                .setQuantity(quantity)
+                .setCollateral(initialMargin)
+                .setType(PositionType.OPEN);
+
+        positionsRepo.save(position);
+
+        return new Ticket()
+                .setType(TicketType.FILL)
+                .setPosition(position)
+                .setBuyer(Ticket.Leg.of(marginOpenResult.getBuyer(), debits.getBuyer(), fees.getBuyer()))
+                .setSeller(Ticket.Leg.of(marginOpenResult.getSeller(), debits.getSeller(), fees.getSeller()));
+    }
+    // Winding down a position at expiration
+
+    public List<Position> getOpenPositions() {
+        return positionsRepo.getAllByOpenEquals(true);
     }
 
     public enum TicketType {
