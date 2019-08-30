@@ -1,4 +1,4 @@
-package com.hydra.merc.margin;
+package com.hydra.merc.margin.requirements;
 
 import com.hydra.merc.contract.Contract;
 import org.joda.time.LocalDate;

@@ -3,7 +3,7 @@ package com.hydra.merc.settlement;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.hydra.merc.ledger.LedgerTransaction;
 import com.hydra.merc.margin.Margin;
-import com.hydra.merc.margin.MarginTransaction;
+import com.hydra.merc.margin.transactions.MarginTransaction;
 import com.hydra.merc.utils.Jackson;
 import lombok.*;
 import lombok.experimental.Accessors;

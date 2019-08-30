@@ -1,6 +1,7 @@
 package com.hydra.merc.margin;
 
 import com.hydra.merc.ledger.LedgerTransaction;
+import com.hydra.merc.margin.transactions.MarginTransaction;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
