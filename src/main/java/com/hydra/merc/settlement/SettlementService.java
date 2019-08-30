@@ -78,7 +78,7 @@ public class SettlementService {
         var settlementAmount = Math.abs(priceDelta);
 
         var longLeg = marginService.creditMargin(counterparts.getLongCounterpart(), settlementAmount);
-        var shortLeg = marginService.debitMargin(counterparts.getShortCounterpart(), contract, settlementAmount);
+        var shortLeg = marginService.debitMargin(counterparts.getShortCounterpart(), settlementAmount);
 
         return new Settlement()
                 .setLongLeg(longLeg)

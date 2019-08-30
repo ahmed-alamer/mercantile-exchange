@@ -5,6 +5,9 @@ import com.hydra.merc.account.Account;
 import com.hydra.merc.contract.Contract;
 import com.hydra.merc.ledger.Ledger;
 import com.hydra.merc.ledger.LedgerTransaction;
+import com.hydra.merc.margin.result.MarginOpenError;
+import com.hydra.merc.margin.result.MarginOpenResult;
+import com.hydra.merc.margin.result.MarginResult;
 import com.hydra.merc.settlement.Settlement;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,9 +39,7 @@ public class MarginService {
     }
 
 
-    private MarginSettlementResult issueMarginCall(Margin margin,
-                                                   float remainingCollateral,
-                                                   float requiredCollateral) {
+    private MarginSettlementResult issueMarginCall(Margin margin, float remainingCollateral, float requiredCollateral) {
         var marginCallAmount = requiredCollateral - remainingCollateral;
 
         var marginCallLedgerTransaction = new LedgerTransaction()
@@ -57,35 +58,38 @@ public class MarginService {
         return MarginSettlementResult.of(marginCallTx, marginCallLedgerTx);
     }
 
-    public MarginResult openMargins(Contract contract, Account buyer, Account seller, float price, int quantity) {
+    public MarginResult<MarginOpenResult> openMargins(Contract contract,
+                                                      Account buyer,
+                                                      Account seller,
+                                                      float price,
+                                                      int quantity) {
+
         float initialMargin = getInitialMargin(contract, quantity);
         var insufficientFundForMargin = checkBalances(buyer, seller, initialMargin);
         if (insufficientFundForMargin.isPresent()) {
-            return insufficientFundForMargin.get();
+            return MarginResult.error(MarginResult.Type.INSUFFICIENT_FUNDS, insufficientFundForMargin.get());
         }
 
         var buyerResult = openMargin(contract, buyer, price, quantity, initialMargin);
         var sellerResult = openMargin(contract, seller, price, quantity, initialMargin);
 
-        return MarginResult.MarginOpenResult.of(buyerResult, sellerResult, initialMargin);
+        return MarginResult.success(MarginResult.Type.OPEN, MarginOpenResult.of(buyerResult, sellerResult, initialMargin));
     }
 
-    private Optional<MarginResult.InsufficientFundForMargin> checkBalances(Account buyer,
-                                                                           Account seller,
-                                                                           float initialMargin) {
+    private Optional<MarginOpenError> checkBalances(Account buyer, Account seller, float initialMargin) {
         var buyerBalance = ledger.getAccountBalance(buyer);
         var sellerBalance = ledger.getAccountBalance(seller);
 
         if (buyerBalance < initialMargin && sellerBalance < initialMargin) {
-            return Optional.of(MarginResult.InsufficientFundForMargin.of(ImmutableList.of(buyer, seller)));
+            return Optional.of(MarginOpenError.of(ImmutableList.of(buyer, seller), "insufficient funds in both accounts"));
         }
 
         if (buyerBalance < initialMargin) {
-            return Optional.of(MarginResult.InsufficientFundForMargin.of(ImmutableList.of(buyer)));
+            return Optional.of(MarginOpenError.of(ImmutableList.of(buyer), "insufficient buyer funds"));
         }
 
         if (sellerBalance < initialMargin) {
-            return Optional.of(MarginResult.InsufficientFundForMargin.of(ImmutableList.of(seller)));
+            return Optional.of(MarginOpenError.of(ImmutableList.of(seller), "insufficient seller funds"));
         }
 
         return Optional.empty();
@@ -98,9 +102,9 @@ public class MarginService {
                 .setType(MarginTransactionType.CLOSE);
 
         if (balance > 0) {
-            transaction.setCredit(balance);
-        } else {
             transaction.setDebit(balance);
+        } else {
+            transaction.setCredit(Math.abs(balance));
         }
 
         var creditAccount = balance > 0
@@ -125,10 +129,10 @@ public class MarginService {
 
     public float getBalance(Margin margin) {
         return marginTransactionsRepo.findAllByMargin(margin)
-                .stream()
-                .map(transaction -> transaction.getCredit() - transaction.getDebit())
-                .reduce(Float::sum)
-                .orElse(0f);
+                                     .stream()
+                                     .map(transaction -> transaction.getCredit() - transaction.getDebit())
+                                     .reduce(Float::sum)
+                                     .orElse(0f);
     }
 
     public Settlement.Leg creditMargin(Margin margin, float amount) {
@@ -140,25 +144,26 @@ public class MarginService {
         marginTransactionsRepo.save(transaction);
 
         return Settlement.Leg.create()
-                .setMargin(margin)
-                .setMarginTransaction(transaction);
+                             .setMargin(margin)
+                             .setMarginTransaction(transaction);
     }
 
-    public Settlement.Leg debitMargin(Margin margin, Contract contract, float amount) {
+    public Settlement.Leg debitMargin(Margin margin, float amount) {
+        var contract = margin.getContract();
         var currentCollateralBalance = getBalance(margin);
 
         var requiredCollateral = marginRequirementsRepo.findByContractAndPeriod(contract, LocalDate.now(), contract.getExpirationDate())
-                .map(MarginRequirement::getInitialMargin)
-                .orElse(contract.getSpecifications().getInitialMargin());
+                                                       .map(MarginRequirement::getInitialMargin)
+                                                       .orElse(contract.getSpecifications().getInitialMargin());
 
         var remainingCollateral = currentCollateralBalance - amount;
         if (remainingCollateral < requiredCollateral) {
             var marginCall = issueMarginCall(margin, remainingCollateral, requiredCollateral);
 
             return Settlement.Leg.create()
-                    .setMargin(margin)
-                    .setMarginTransaction(marginCall.getMarginTransaction())
-                    .setMarginCall(marginCall.getLedgerTransaction());
+                                 .setMargin(margin)
+                                 .setMarginTransaction(marginCall.getMarginTransaction())
+                                 .setMarginCall(marginCall.getLedgerTransaction());
         }
 
         var transaction = new MarginTransaction()
@@ -169,8 +174,8 @@ public class MarginService {
         marginTransactionsRepo.save(transaction);
 
         return Settlement.Leg.create()
-                .setMargin(margin)
-                .setMarginTransaction(transaction);
+                             .setMargin(margin)
+                             .setMarginTransaction(transaction);
     }
 
 
