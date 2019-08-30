@@ -1,5 +1,6 @@
-package com.hydra.merc.margin;
+package com.hydra.merc.margin.transactions;
 
+import com.hydra.merc.margin.Margin;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 

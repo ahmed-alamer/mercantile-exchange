@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hydra.merc.json.DateTimeDeserializer;
 import com.hydra.merc.json.DateTimeSerializer;
 import com.hydra.merc.ledger.LedgerTransaction;
-import com.hydra.merc.margin.MarginTransaction;
+import com.hydra.merc.margin.transactions.MarginTransaction;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

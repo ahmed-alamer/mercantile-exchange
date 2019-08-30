@@ -1,9 +1,10 @@
-package com.hydra.merc.margin;
+package com.hydra.merc.margin.transactions;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hydra.merc.json.DateTimeDeserializer;
 import com.hydra.merc.json.DateTimeSerializer;
+import com.hydra.merc.margin.Margin;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import org.joda.time.DateTime;

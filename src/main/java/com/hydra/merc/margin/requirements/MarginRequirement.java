@@ -1,4 +1,4 @@
-package com.hydra.merc.margin;
+package com.hydra.merc.margin.requirements;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
