@@ -36,6 +36,7 @@ public class Order {
     @Enumerated(EnumType.STRING)
     private OrderStatus status = OrderStatus.OPEN;
 
+    private float price;
     private int quantity;
 
     @JsonSerialize(using = DateTimeSerializer.class)

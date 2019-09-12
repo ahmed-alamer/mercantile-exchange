@@ -2,14 +2,8 @@ package com.hydra.merc.order;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
-import com.hydra.merc.account.Account;
-import com.hydra.merc.contract.Contract;
 import com.hydra.merc.position.PositionsService;
-import com.hydra.merc.price.DailyPrice;
-import com.hydra.merc.price.DailyPriceService;
-import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,48 +14,45 @@ import java.util.Map;
  */
 @Service
 public class OrderBook {
-    private final Map<Direction, Multimap<Contract, Order>> openInterest = ImmutableMap.of(
+    private final Map<Direction, Multimap<Long, OpenInterest>> openInterest = ImmutableMap.of(
             Direction.LONG, ArrayListMultimap.create(),
             Direction.SHORT, ArrayListMultimap.create()
     );
-
 
     private final OrdersRepo ordersRepo;
 
     private final PositionsService positionsService;
 
-    private final DailyPriceService dailyPriceService;
-
-    private Map<Contract, DailyPrice> currentPrices = Maps.newHashMap();
-
     @Autowired
-    public OrderBook(OrdersRepo ordersRepo, PositionsService positionsService, DailyPriceService dailyPriceService) {
+    public OrderBook(OrdersRepo ordersRepo, PositionsService positionsService) {
         this.ordersRepo = ordersRepo;
         this.positionsService = positionsService;
-        this.dailyPriceService = dailyPriceService;
     }
 
-    public Order submitOrder(Account account, Contract contract, Direction direction, int quantity) {
-        var order = new Order()
-                .setAccount(account)
-                .setContract(contract)
-                .setDirection(direction)
-                .setQuantity(quantity);
+    public Order submitOrder(Order order) {
+        var account = order.getAccount();
+        var contract = order.getContract();
+        var direction = order.getDirection();
 
+        var price = order.getPrice();
+        var quantity = order.getQuantity();
 
         var book = openInterest.get(direction);
         var anteBook = openInterest.get(direction.getAnte());
 
-        var maybeMatch = anteBook.values().stream().filter(ante -> ante.getQuantity() == quantity).findFirst();
+        var maybeMatch = anteBook.values()
+                                 .stream()
+                                 .filter(ante -> ante.getOrder().getQuantity() == quantity)
+                                 .findFirst();
         if (maybeMatch.isEmpty()) {
             ordersRepo.save(order);
-            book.put(contract, order);
+            book.put(contract.getId(), OpenInterest.of(contract, order));
         } else {
-            var match = maybeMatch.get();
+            var match = maybeMatch.get().getOrder();
 
-            positionsService.openPosition(contract, account, match.getAccount(), getPrice(contract), quantity); // TODO: Notification Service
+            positionsService.openPosition(contract, account, match.getAccount(), price, quantity); // TODO: Notification Service
 
-            anteBook.values().removeIf(anteOrder -> anteOrder.getId() == match.getId());
+            anteBook.values().removeIf(anteOrder -> anteOrder.getOrder().getId() == match.getId());
 
             order.setStatus(OrderStatus.FILLED);
             match.setStatus(OrderStatus.FILLED);
@@ -77,19 +68,13 @@ public class OrderBook {
         var direction = order.getDirection();
         var contract = order.getContract();
 
-        var removed = openInterest.get(direction).get(contract).removeIf(existingOrder -> existingOrder.getId() == order.getId());
+        var removed = openInterest.get(direction)
+                                  .get(contract.getId())
+                                  .removeIf(openInterest -> openInterest.getOrder().getId() == order.getId());
         if (removed) {
             order.setStatus(OrderStatus.CANCELLED);
         }
 
         return ordersRepo.save(order);
-    }
-
-    private float getPrice(Contract contract) {
-        if (currentPrices.get(contract).getDay().isBefore(LocalDate.now())) {
-            currentPrices.put(contract, dailyPriceService.getPrice(contract).orElseThrow());
-        }
-
-        return currentPrices.computeIfAbsent(contract, currentContract -> dailyPriceService.getPrice(currentContract).orElseThrow()).getPrice();
     }
 }
