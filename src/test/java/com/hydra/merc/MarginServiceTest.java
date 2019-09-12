@@ -40,16 +40,19 @@ public class MarginServiceTest {
 
     @Autowired
     private AccountsRepo accountsRepo;
+
     @Autowired
     private AccountService accountService;
+
     @Autowired
     private Ledger ledger;
+
     @Autowired
     private ContractService contractService;
+
     @Autowired
     private MarginService marginService;
 
-    private ContractSpecifications contractSpecs;
     private Contract contract;
 
     private Account seller;
@@ -58,12 +61,9 @@ public class MarginServiceTest {
 
     @Before
     public void initialize() {
-        accountsRepo.save(Account.MARGINS_ACCOUNT);
-        accountsRepo.save(Account.FEES_ACCOUNT);
-        accountsRepo.save(Account.SETTLEMENTS_ACCOUNT);
-        accountsRepo.save(Account.CASH_ACCOUNT);
+        accountsRepo.saveAll(Account.INTERNAL_ACCOUNTS);
 
-        contractSpecs = new ContractSpecifications()
+        var contractSpecs = new ContractSpecifications()
                 .setInitialMargin(100)
                 .setSymbol("SLR")
                 .setTickSize(1F)
