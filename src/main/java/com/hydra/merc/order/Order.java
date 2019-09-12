@@ -18,6 +18,7 @@ import javax.persistence.*;
 @Data
 @Entity
 @Accessors(chain = true)
+@Table(name = "orders")
 public class Order {
 
     @Id

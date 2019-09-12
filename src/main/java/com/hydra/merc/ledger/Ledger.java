@@ -1,5 +1,6 @@
 package com.hydra.merc.ledger;
 
+import com.google.common.collect.ImmutableList;
 import com.hydra.merc.account.Account;
 import com.hydra.merc.contract.Contract;
 import lombok.AllArgsConstructor;
@@ -53,6 +54,7 @@ public class Ledger {
                 .setCredit(Account.MARGINS_ACCOUNT)
                 .setDebit(seller);
 
+        ledgerTransactionsRepo.saveAll(ImmutableList.of(buyerTransaction, sellerTransaction));
 
         return TradeResult.of(buyerTransaction, sellerTransaction);
     }
@@ -73,20 +75,19 @@ public class Ledger {
                 .setCredit(Account.FEES_ACCOUNT)
                 .setDebit(seller);
 
+        ledgerTransactionsRepo.saveAll(ImmutableList.of(buyerFee, sellerFee));
+
         return TradeResult.of(buyerFee, sellerFee);
     }
 
     private float totalTransactionsNotional(Account account,
                                             Function<Account, List<LedgerTransaction>> transactionsSupplier) {
-        return transactionsTotal(transactionsSupplier.apply(account));
-    }
 
-    private float transactionsTotal(List<LedgerTransaction> transactions) {
-        return transactions.stream()
-                .map(LedgerTransaction::getAmount)
-                .reduce(Float::sum)
-                .orElse(0f);
-
+        return transactionsSupplier.apply(account)
+                                   .stream()
+                                   .map(LedgerTransaction::getAmount)
+                                   .reduce(Float::sum)
+                                   .orElse(0f);
     }
 
     public LedgerTransaction submitTransaction(LedgerTransaction transaction) {

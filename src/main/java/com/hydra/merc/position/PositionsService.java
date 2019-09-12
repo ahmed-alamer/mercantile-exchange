@@ -1,5 +1,6 @@
 package com.hydra.merc.position;
 
+import com.google.common.collect.ImmutableList;
 import com.hydra.merc.account.Account;
 import com.hydra.merc.contract.Contract;
 import com.hydra.merc.fee.FeesService;
@@ -100,7 +101,14 @@ public class PositionsService {
     // Winding down a position at expiration
 
     public List<Position> getOpenPositions() {
-        return positionsRepo.getAllByOpenEquals(true);
+        return positionsRepo.findAllByOpenEquals(true);
+    }
+
+    public List<Position> getAccountPositions(Account account) {
+        return ImmutableList.<Position>builder()
+                .addAll(positionsRepo.findAllByBuyerAccount(account))
+                .addAll(positionsRepo.findAllBySellerAccount(account))
+                .build();
     }
 
     public enum TicketType {

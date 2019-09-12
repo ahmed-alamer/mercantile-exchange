@@ -38,7 +38,7 @@ import static org.junit.Assert.assertNull;
 @AutoConfigureTestDatabase
 @TestPropertySource(properties = {
         "logging.level.com.hydra=DEBUG",
-        "spring.jpa.hibernate.ddl-auto=create",
+        "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.jpa.properties.jadira.usertype.autoRegisterUserTypes=true"
 })
 public class SettlementServiceTest {

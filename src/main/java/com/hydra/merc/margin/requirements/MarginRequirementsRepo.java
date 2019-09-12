@@ -15,5 +15,7 @@ import java.util.Optional;
 @Repository
 public interface MarginRequirementsRepo extends CrudRepository<MarginRequirement, Long> {
     @Query("from MarginRequirement m where contract = :contract and (endDate < :endDate and startDate > :startDate) order by startDate desc")
-    Optional<MarginRequirement> findByContractAndPeriod(@Param("contract") Contract contract, @Param("startDate") LocalDate start, @Param("endDate") LocalDate end);
+    Optional<MarginRequirement> findByContractAndPeriod(@Param("contract") Contract contract,
+                                                        @Param("startDate") LocalDate start,
+                                                        @Param("endDate") LocalDate end);
 }
