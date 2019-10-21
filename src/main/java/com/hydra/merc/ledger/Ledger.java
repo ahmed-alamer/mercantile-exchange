@@ -93,6 +93,15 @@ public class Ledger {
         return ledgerTransactionsRepo.save(transaction);
     }
 
+    public LedgerTransaction debitMarginCall(Account account, float amount) {
+        var marginCallLedgerTransaction = new LedgerTransaction()
+                .setAmount(amount)
+                .setDebit(account)
+                .setCredit(Account.MARGINS_ACCOUNT);
+
+        return ledgerTransactionsRepo.save(marginCallLedgerTransaction);
+    }
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor(staticName = "of")
