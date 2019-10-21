@@ -1,5 +1,6 @@
 package com.hydra.merc.position;
 
+import com.hydra.merc.account.Account;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,5 +12,10 @@ import java.util.List;
 @Repository
 public interface PositionsRepo extends CrudRepository<Position, Long> {
 
-    public List<Position> getAllByOpenEquals(boolean open);
+    List<Position> findAllByOpenEquals(boolean open);
+
+    List<Position> findAllByBuyerAccount(Account account);
+
+    List<Position> findAllBySellerAccount(Account account);
+
 }
