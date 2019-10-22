@@ -7,6 +7,7 @@ import com.hydra.merc.fee.FeesService;
 import com.hydra.merc.ledger.Ledger;
 import com.hydra.merc.margin.MarginService;
 import com.hydra.merc.margin.result.MarginOpenResult;
+import com.hydra.merc.margin.result.MarginResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -41,15 +42,12 @@ public class PositionsService {
     @Transactional
     public Ticket openPosition(Contract contract, Account buyer, Account seller, float price, int quantity) {
         var marginResult = marginService.openMargins(contract, buyer, seller, price, quantity);
-        switch (marginResult.getType()) {
-            case OPEN:
-                return handleOpen(contract, buyer, seller, price, quantity, marginResult.getResult());
-            case INSUFFICIENT_FUNDS:
-                return handleInsufficientFunds();
-            default:
-                log.error("Unexpected result type: {}, input: {}, {}, {}, {}, {}", marginResult.getType(), contract, buyer, seller, price, quantity);
-                throw new IllegalStateException("Error processing you request, system admins has been notified and will reach out as soon as possible");
+
+        if (marginResult.getType() == MarginResult.Type.OPEN) {
+            return handleOpen(contract, buyer, seller, price, quantity, marginResult.getResult());
         }
+
+        return handleInsufficientFunds();
     }
 
     public Ticket closePosition(Position position) {

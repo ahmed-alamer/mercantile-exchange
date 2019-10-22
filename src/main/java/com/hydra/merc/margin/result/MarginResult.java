@@ -33,7 +33,6 @@ public final class MarginResult<T> {
     }
 
     public enum Type {
-        SETTLEMENT,
         OPEN,
         INSUFFICIENT_FUNDS;
     }

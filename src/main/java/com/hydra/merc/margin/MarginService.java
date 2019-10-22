@@ -155,20 +155,23 @@ public class MarginService {
     public MarginSettlementResult closeMargin(Margin margin) {
         var balance = marginLedger.getBalance(margin);
 
-        MarginTransaction marginTransaction = marginLedger.closeMargin(margin);
+        Account creditAccount;
+        Account debitAccount;
 
-        var creditAccount = balance > 0
-                            ? margin.getAccount()
-                            : Account.MARGINS_ACCOUNT;
-
-        var debitAccount = balance > 0
-                           ? Account.MARGINS_ACCOUNT
-                           : margin.getAccount();
+        if (balance > 0) {
+            creditAccount = margin.getAccount();
+            debitAccount = Account.MARGINS_ACCOUNT;
+        } else {
+            creditAccount = Account.MARGINS_ACCOUNT;
+            debitAccount = margin.getAccount();
+        }
 
         var ledgerTransaction = new LedgerTransaction()
                 .setCredit(creditAccount)
                 .setDebit(debitAccount)
                 .setAmount(balance);
+
+        MarginTransaction marginTransaction = marginLedger.closeMargin(margin);
 
         return MarginSettlementResult.of(marginTransaction, ledgerTransaction);
     }

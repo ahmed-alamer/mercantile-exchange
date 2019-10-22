@@ -1,10 +1,11 @@
 package com.hydra.merc.margin.transactions;
 
 import com.hydra.merc.margin.Margin;
-import com.hydra.merc.margin.requirements.MarginRequirementsRepo;
 import com.hydra.merc.settlement.Settlement;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
  * Created By aalamer on 10-21-2019
@@ -12,13 +13,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class MarginLedger {
     private final MarginTransactionsRepo marginTransactionsRepo;
-    private final MarginRequirementsRepo marginRequirementsRepo;
 
     @Autowired
-    public MarginLedger(MarginTransactionsRepo marginTransactionsRepo,
-                        MarginRequirementsRepo marginRequirementsRepo) {
+    public MarginLedger(MarginTransactionsRepo marginTransactionsRepo) {
         this.marginTransactionsRepo = marginTransactionsRepo;
-        this.marginRequirementsRepo = marginRequirementsRepo;
     }
 
     public float getBalance(Margin margin) {
@@ -82,12 +80,16 @@ public class MarginLedger {
                 .setMargin(margin)
                 .setType(MarginTransactionType.CLOSE);
 
-        if (balance > 0) {
-            transaction.setDebit(balance);
-        } else {
+        if (balance < 0) {
             transaction.setCredit(Math.abs(balance));
+        } else if (balance > 0) {
+            transaction.setDebit(balance);
         }
 
         return marginTransactionsRepo.save(transaction);
+    }
+
+    public List<MarginTransaction> getTransactions(Margin margin) {
+        return marginTransactionsRepo.findAllByMargin(margin);
     }
 }
