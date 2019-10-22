@@ -8,5 +8,5 @@ public enum MarginTransactionType {
     MARGIN_CALL,
     SETTLEMENT,
     OPEN,
-    CLOSE;
+    CLOSE
 }
